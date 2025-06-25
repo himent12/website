@@ -98,146 +98,169 @@ const TextTranslator = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 bg-white">
-      {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-gray-800 mb-2">
+    <div className="min-h-screen bg-white">
+      {/* Mobile-Optimized Header */}
+      <div className="text-center px-4 py-6 sm:py-8 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-2">
           中英翻译器
         </h1>
-        <p className="text-lg text-gray-600">
+        <p className="text-base sm:text-lg text-gray-600">
           Chinese to English Translator
         </p>
-        <div className="w-24 h-1 bg-primary-500 mx-auto mt-4 rounded-full"></div>
+        <div className="w-16 sm:w-24 h-1 bg-blue-500 mx-auto mt-3 sm:mt-4 rounded-full"></div>
       </div>
 
-      {/* Translation Interface */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      {/* Mobile-First Translation Interface */}
+      <div className="px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+
         {/* Input Section */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-700 flex items-center">
-              <span className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-2">
+        <div className="mb-6 lg:mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-700 flex items-center">
+              <span className="w-6 h-6 sm:w-7 sm:h-7 bg-red-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-2 sm:mr-3">
                 中
               </span>
-              简体中文 (Simplified Chinese)
+              <span className="hidden sm:inline">简体中文 (Simplified Chinese)</span>
+              <span className="sm:hidden">中文输入</span>
             </h2>
             <button
               onClick={handleClear}
-              className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+              className="min-h-[44px] px-3 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors touch-manipulation"
             >
-              清除 Clear
+              <span className="hidden sm:inline">清除 Clear</span>
+              <span className="sm:hidden">清除</span>
             </button>
           </div>
-          
+
           <div className="relative">
             <textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder="请输入要翻译的中文文本..."
-              className="w-full h-64 p-4 border-2 border-gray-200 rounded-lg resize-none focus:border-primary-500 focus:outline-none transition-colors font-chinese text-lg"
+              className="w-full h-48 sm:h-56 lg:h-64 p-4 sm:p-5
+                         border-2 border-gray-200 rounded-xl
+                         resize-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200
+                         focus:outline-none transition-all duration-200
+                         text-base sm:text-lg leading-relaxed
+                         touch-manipulation"
               disabled={isLoading}
+              style={{ fontSize: '16px' }} // Prevent zoom on iOS
             />
-            <div className="absolute bottom-3 right-3 text-sm text-gray-400">
+            <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 text-xs sm:text-sm text-gray-400 bg-white px-2 py-1 rounded">
               {inputText.length} 字符
             </div>
           </div>
         </div>
 
         {/* Output Section */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-700 flex items-center">
-              <span className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-2">
+        <div className="mb-6 lg:mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-700 flex items-center">
+              <span className="w-6 h-6 sm:w-7 sm:h-7 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-2 sm:mr-3">
                 EN
               </span>
-              English
+              <span className="hidden sm:inline">English Translation</span>
+              <span className="sm:hidden">英文输出</span>
             </h2>
             {outputText && (
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 sm:space-x-3">
                 <button
                   onClick={handleCopyOutput}
-                  className="text-sm text-gray-500 hover:text-gray-700 transition-colors flex items-center"
+                  className="min-h-[44px] px-3 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center touch-manipulation"
                 >
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
-                  Copy
+                  <span className="hidden sm:inline">Copy</span>
                 </button>
                 <button
                   onClick={handleOpenReadingMode}
-                  className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition-colors flex items-center"
+                  className="min-h-[44px] px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition-colors flex items-center touch-manipulation"
                 >
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
-                  Reading Mode
+                  <span className="hidden sm:inline">Reading</span>
+                  <span className="sm:hidden">阅读</span>
                 </button>
               </div>
             )}
           </div>
-          
+
           <div className="relative">
             <textarea
               value={outputText}
               readOnly
-              placeholder={isLoading ? "Translating..." : "Translation will appear here..."}
-              className="w-full h-64 p-4 border-2 border-gray-200 rounded-lg resize-none bg-gray-50 text-lg"
+              placeholder={isLoading ? "正在翻译..." : "Translation will appear here..."}
+              className="w-full h-48 sm:h-56 lg:h-64 p-4 sm:p-5
+                         border-2 border-gray-200 rounded-xl
+                         resize-none bg-gray-50
+                         text-base sm:text-lg leading-relaxed
+                         touch-manipulation"
+              style={{ fontSize: '16px' }} // Prevent zoom on iOS
             />
             {isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-75 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>
-                  <span className="text-gray-600">Translating...</span>
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-90 rounded-xl">
+                <div className="flex flex-col items-center space-y-3 p-4">
+                  <div className="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-blue-500"></div>
+                  <span className="text-gray-600 text-sm sm:text-base font-medium">正在翻译...</span>
                 </div>
               </div>
             )}
             {outputText && (
-              <div className="absolute bottom-3 right-3 text-sm text-gray-400">
+              <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 text-xs sm:text-sm text-gray-400 bg-white px-2 py-1 rounded">
                 {outputText.length} characters
               </div>
             )}
           </div>
         </div>
-      </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <div className="flex items-center">
-            <svg className="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="text-red-700">{error}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Action Buttons */}
-      <div className="flex justify-center space-x-4">
-        <button
-          onClick={handleTranslate}
-          disabled={isLoading || !inputText.trim()}
-          className="px-8 py-3 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
-        >
-          {isLoading ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              <span>Translating...</span>
-            </>
-          ) : (
-            <>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <div className="flex items-start space-x-3">
+              <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span>翻译 Translate</span>
-            </>
-          )}
-        </button>
-      </div>
+              <span className="text-red-700 text-sm sm:text-base leading-relaxed">{error}</span>
+            </div>
+          </div>
+        )}
 
-      {/* Footer */}
-      <div className="mt-12 text-center text-sm text-gray-500">
-        <p>Powered by AI Translation • 由人工智能驱动</p>
+        {/* Mobile-Optimized Action Button */}
+        <div className="flex justify-center mb-8">
+          <button
+            onClick={handleTranslate}
+            disabled={isLoading || !inputText.trim()}
+            className="w-full sm:w-auto min-h-[56px] px-8 py-4
+                       bg-blue-600 hover:bg-blue-700
+                       disabled:bg-gray-300 disabled:cursor-not-allowed
+                       text-white font-semibold text-base sm:text-lg
+                       rounded-xl shadow-lg hover:shadow-xl
+                       transition-all duration-200 ease-in-out
+                       flex items-center justify-center space-x-3
+                       touch-manipulation transform hover:scale-105 disabled:transform-none"
+          >
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                <span>正在翻译...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                </svg>
+                <span>翻译 Translate</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Mobile-Optimized Footer */}
+        <div className="text-center text-xs sm:text-sm text-gray-500 pb-4">
+          <p>Powered by AI Translation • 由人工智能驱动</p>
+        </div>
       </div>
     </div>
   );

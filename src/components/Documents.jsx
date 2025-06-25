@@ -20,10 +20,11 @@ const Documents = () => {
     }
   }, []);
 
-  // Generate document title from Chinese text (first 30 characters)
-  const generateTitle = (chineseText) => {
+  // Generate document title from Chinese text (responsive length)
+  const generateTitle = (chineseText, isMobile = false) => {
     if (!chineseText) return 'Untitled Document';
-    return chineseText.length > 30 ? chineseText.substring(0, 30) + '...' : chineseText;
+    const maxLength = isMobile ? 20 : 30;
+    return chineseText.length > maxLength ? chineseText.substring(0, maxLength) + '...' : chineseText;
   };
 
   // Format date for display
@@ -64,43 +65,52 @@ const Documents = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
-          📚 Translation Documents
-        </h1>
-        <p className="text-gray-600">
-          Manage and access your previously translated documents
-        </p>
-      </div>
-
-      {/* Search and Actions Bar */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="flex-1">
-          <div className="relative">
-            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search documents..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {/* Mobile-Optimized Header */}
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2 flex items-center">
+            <span className="mr-2">📚</span>
+            <span className="hidden sm:inline">Translation Documents</span>
+            <span className="sm:hidden">Documents</span>
+          </h1>
+          <p className="text-sm sm:text-base text-gray-600">
+            Manage and access your previously translated documents
+          </p>
         </div>
-        
-        {documents.length > 0 && (
-          <button
-            onClick={clearAllDocuments}
-            className="px-4 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
-          >
-            Clear All
-          </button>
-        )}
-      </div>
+
+        {/* Mobile-Optimized Search and Actions Bar */}
+        <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4 mb-6">
+          <div className="flex-1">
+            <div className="relative">
+              <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search documents..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full min-h-[48px] pl-10 pr-4 py-3 border border-gray-300 rounded-xl
+                           focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                           text-base touch-manipulation"
+                style={{ fontSize: '16px' }} // Prevent zoom on iOS
+              />
+            </div>
+          </div>
+
+          {documents.length > 0 && (
+            <button
+              onClick={clearAllDocuments}
+              className="min-h-[48px] px-4 py-3 text-red-600 border border-red-300 rounded-xl
+                         hover:bg-red-50 transition-colors touch-manipulation
+                         flex items-center justify-center font-medium"
+            >
+              <span className="hidden sm:inline">Clear All</span>
+              <span className="sm:hidden">Clear</span>
+            </button>
+          )}
+        </div>
 
       {/* Documents List */}
       {filteredDocuments.length === 0 ? (

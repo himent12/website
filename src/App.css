@@ -1,38 +1,148 @@
+/* Import mobile-specific styles */
+@import './styles/mobile.css';
+
+/* Base application styles */
 .App {
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+/* Mobile-first responsive design utilities */
+.container-mobile {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 1rem;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
+@media (min-width: 640px) {
+  .container-mobile {
+    max-width: 640px;
+    padding: 0 1.5rem;
   }
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+@media (min-width: 768px) {
+  .container-mobile {
+    max-width: 768px;
+    padding: 0 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-mobile {
+    max-width: 1024px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .container-mobile {
+    max-width: 1280px;
+  }
+}
+
+/* Typography improvements for mobile */
+.font-chinese {
+  font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'WenQuanYi Micro Hei', sans-serif;
+}
+
+.font-lora {
+  font-family: 'Lora', 'Georgia', serif;
+}
+
+/* Mobile-optimized button styles */
+.btn-mobile {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  min-height: 44px;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+  touch-action: manipulation;
+  user-select: none;
 }
 
-.App-link {
-  color: #61dafb;
+.btn-mobile:active {
+  transform: scale(0.98);
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+/* Mobile-specific loading states */
+.loading-mobile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.loading-spinner-mobile {
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Mobile-friendly form styles */
+.form-mobile input,
+.form-mobile textarea,
+.form-mobile select {
+  width: 100%;
+  min-height: 48px;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.75rem;
+  font-size: 16px; /* Prevent zoom on iOS */
+  transition: border-color 0.2s ease-in-out;
+}
+
+.form-mobile input:focus,
+.form-mobile textarea:focus,
+.form-mobile select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Responsive spacing utilities */
+.space-mobile-y > * + * {
+  margin-top: 1rem;
+}
+
+@media (min-width: 640px) {
+  .space-mobile-y > * + * {
+    margin-top: 1.5rem;
   }
-  to {
-    transform: rotate(360deg);
+}
+
+.space-mobile-x > * + * {
+  margin-left: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .space-mobile-x > * + * {
+    margin-left: 1rem;
+  }
+}
+
+/* Mobile-optimized card styles */
+.card-mobile {
+  background: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+@media (min-width: 640px) {
+  .card-mobile {
+    padding: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   }
 }

@@ -41,22 +41,37 @@ const TabContainer = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      {/* Tab Navigation */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4">
-          <nav className="flex space-x-8" aria-label="Tabs">
+      {/* Mobile-Optimized Tab Navigation */}
+      <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-6xl mx-auto px-2 sm:px-4">
+          <nav className="flex justify-center sm:justify-start overflow-x-auto scrollbar-hide" aria-label="Tabs">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`${
                   activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 transition-colors`}
+                    ? 'border-blue-500 text-blue-600 bg-blue-50'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                }
+                flex-shrink-0 min-h-[44px] px-3 sm:px-4 py-2 sm:py-4
+                border-b-2 font-medium text-sm sm:text-base
+                flex items-center justify-center space-x-1 sm:space-x-2
+                transition-all duration-200 ease-in-out
+                touch-manipulation select-none
+                min-w-[80px] sm:min-w-auto
+                `}
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                aria-controls={`tabpanel-${tab.id}`}
               >
-                {tab.icon}
-                <span>{tab.name}</span>
+                <span className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0">
+                  {tab.icon}
+                </span>
+                <span className="hidden xs:inline sm:inline truncate">{tab.name}</span>
+                <span className="xs:hidden sm:hidden text-xs font-semibold">
+                  {tab.name.split(' ')[0]}
+                </span>
               </button>
             ))}
           </nav>
@@ -64,7 +79,12 @@ const TabContainer = () => {
       </div>
 
       {/* Tab Content */}
-      <div className="py-8">
+      <div
+        className="pb-4 sm:pb-8"
+        role="tabpanel"
+        id={`tabpanel-${activeTab}`}
+        aria-labelledby={`tab-${activeTab}`}
+      >
         {tabs.find(tab => tab.id === activeTab)?.component}
       </div>
     </div>

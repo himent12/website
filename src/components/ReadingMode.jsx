@@ -57,54 +57,58 @@ const ReadingMode = () => {
     <div className={`min-h-screen transition-colors duration-300 ${
       isDarkMode
         ? 'bg-gray-900 text-gray-100'
-        : 'bg-tan-100 text-gray-900'
+        : 'bg-amber-50 text-gray-900'
     }`}>
-      {/* Progress Bar */}
+      {/* Mobile-Optimized Progress Bar */}
       <div className="fixed top-0 left-0 w-full h-1 bg-gray-200 dark:bg-gray-700 z-50">
-        <div 
+        <div
           className="h-full bg-blue-500 transition-all duration-150"
           style={{ width: `${readingProgress}%` }}
         />
       </div>
 
-      {/* Header Controls */}
-      <div className={`sticky top-0 z-40 border-b transition-colors duration-300 ${
+      {/* Mobile-First Header Controls */}
+      <div className={`sticky top-1 z-40 border-b transition-colors duration-300 ${
         isDarkMode
           ? 'bg-gray-800 border-gray-700'
-          : 'bg-tan-50 border-tan-300'
+          : 'bg-white border-gray-200'
       }`}>
-        <div className="max-w-4xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
             {/* Back Button */}
             <button
               onClick={() => navigate('/')}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+              className={`flex items-center justify-center sm:justify-start space-x-2
+                         min-h-[44px] px-4 py-2 rounded-xl transition-colors touch-manipulation ${
                 isDarkMode
                   ? 'text-gray-300 hover:text-white hover:bg-gray-700'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-tan-200'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
               }`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              <span>Back to Translator</span>
+              <span className="font-medium">Back to Translator</span>
             </button>
 
-            {/* Controls */}
-            <div className="flex items-center space-x-4">
+            {/* Mobile-Optimized Controls */}
+            <div className="flex items-center justify-center space-x-3 sm:space-x-4">
               {/* Font Size Control */}
               <div className="flex items-center space-x-2">
-                <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Font:
+                <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <span className="hidden sm:inline">Font:</span>
+                  <span className="sm:hidden">A</span>
                 </span>
                 <select
                   value={fontSize}
                   onChange={(e) => setFontSize(e.target.value)}
-                  className={`px-2 py-1 rounded border text-sm ${
+                  className={`min-h-[44px] px-3 py-2 rounded-xl border text-sm font-medium
+                             touch-manipulation ${
                     isDarkMode
                       ? 'bg-gray-700 border-gray-600 text-gray-200'
-                      : 'bg-tan-50 border-tan-300 text-gray-900'
+                      : 'bg-white border-gray-300 text-gray-900'
                   }`}
+                  style={{ fontSize: '16px' }} // Prevent zoom on iOS
                 >
                   {fontSizeOptions.map(option => (
                     <option key={option.value} value={option.value}>
@@ -117,10 +121,10 @@ const ReadingMode = () => {
               {/* Dark Mode Toggle */}
               <button
                 onClick={() => setIsDarkMode(!isDarkMode)}
-                className={`p-2 rounded-lg transition-colors ${
+                className={`min-h-[44px] p-3 rounded-xl transition-colors touch-manipulation ${
                   isDarkMode
                     ? 'text-yellow-400 hover:bg-gray-700'
-                    : 'text-gray-600 hover:bg-tan-200'
+                    : 'text-gray-600 hover:bg-gray-100'
                 }`}
                 title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
               >
@@ -136,7 +140,8 @@ const ReadingMode = () => {
               </button>
 
               {/* Progress Indicator */}
-              <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              <div className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <span className="hidden sm:inline">Progress: </span>
                 {Math.round(readingProgress)}%
               </div>
             </div>
@@ -144,50 +149,58 @@ const ReadingMode = () => {
         </div>
       </div>
 
-      {/* Main Reading Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Document Info */}
-        <div className={`mb-8 p-4 rounded-lg border ${
+      {/* Mobile-Optimized Main Reading Content */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {/* Mobile-Optimized Document Info */}
+        <div className={`mb-6 sm:mb-8 p-4 sm:p-6 rounded-xl border ${
           isDarkMode
             ? 'bg-gray-800 border-gray-700'
-            : 'bg-tan-50 border-tan-300'
+            : 'bg-white border-gray-200'
         }`}>
-          <h1 className={`text-2xl font-bold mb-2 ${
+          <h1 className={`text-xl sm:text-2xl lg:text-3xl font-bold mb-3 ${
             isDarkMode ? 'text-gray-100' : 'text-gray-900'
           }`}>
             Reading Mode
           </h1>
-          <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            Translated from Chinese • {paragraphs.length} paragraph{paragraphs.length !== 1 ? 's' : ''} • 
-            Estimated reading time: {Math.ceil(translatedText.split(' ').length / 200)} min
-          </p>
+          <div className={`text-xs sm:text-sm space-y-1 sm:space-y-0 sm:space-x-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            <span className="block sm:inline">Translated from Chinese</span>
+            <span className="hidden sm:inline">•</span>
+            <span className="block sm:inline">{paragraphs.length} paragraph{paragraphs.length !== 1 ? 's' : ''}</span>
+            <span className="hidden sm:inline">•</span>
+            <span className="block sm:inline">
+              Estimated reading time: {Math.ceil(translatedText.split(' ').length / 200)} min
+            </span>
+          </div>
         </div>
 
-        {/* Reading Content */}
+        {/* Mobile-Optimized Reading Content */}
         <article className="prose prose-lg max-w-none">
           {paragraphs.map((paragraph, index) => (
             <p
               key={index}
-              className={`mb-6 leading-relaxed font-lora ${fontSize} ${
+              className={`mb-6 sm:mb-8 leading-relaxed ${fontSize} ${
                 isDarkMode ? 'text-gray-200' : 'text-gray-800'
               }`}
-              style={{ lineHeight: '1.8' }}
+              style={{
+                lineHeight: '1.8',
+                fontSize: window.innerWidth < 640 ? '18px' : undefined // Ensure readability on mobile
+              }}
             >
               {paragraph}
             </p>
           ))}
         </article>
 
-        {/* End of Document */}
-        <div className={`mt-12 pt-8 border-t text-center ${
-          isDarkMode ? 'border-gray-700' : 'border-tan-300'
+        {/* Mobile-Optimized End of Document */}
+        <div className={`mt-12 sm:mt-16 pt-8 border-t text-center ${
+          isDarkMode ? 'border-gray-700' : 'border-gray-200'
         }`}>
-          <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+          <p className={`text-sm sm:text-base mb-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
             End of document
           </p>
           <button
             onClick={() => navigate('/')}
-            className={`mt-4 px-6 py-2 rounded-lg transition-colors ${
+            className={`min-h-[48px] px-6 py-3 rounded-xl font-medium transition-colors touch-manipulation ${
               isDarkMode
                 ? 'bg-blue-600 hover:bg-blue-700 text-white'
                 : 'bg-blue-500 hover:bg-blue-600 text-white'
@@ -198,14 +211,16 @@ const ReadingMode = () => {
         </div>
       </div>
 
-      {/* Floating Action Button - Scroll to Top */}
+      {/* Mobile-Optimized Floating Action Button - Scroll to Top */}
       {readingProgress > 10 && (
         <button
           onClick={scrollToTop}
-          className={`fixed bottom-6 right-6 p-3 rounded-full shadow-lg transition-all duration-300 ${
+          className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6
+                     min-h-[56px] min-w-[56px] p-3 rounded-full shadow-lg
+                     transition-all duration-300 touch-manipulation z-40 ${
             isDarkMode
               ? 'bg-gray-700 hover:bg-gray-600 text-gray-200'
-              : 'bg-tan-50 hover:bg-tan-100 text-gray-700 border border-tan-300'
+              : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300'
           }`}
           title="Scroll to top"
         >
