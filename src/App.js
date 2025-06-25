@@ -1,6 +1,7 @@
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { SpeedInsights } from "@vercel/speed-insights/react";
+import { Analytics } from "@vercel/analytics/react";
 import { useEffect } from 'react';
 import TabContainer from './components/TabContainer';
 import ReadingMode from './components/ReadingMode';
@@ -22,6 +23,7 @@ function App() {
         <Route path="/demo" element={<ReaderDemo />} />
       </Routes>
       <SpeedInsights />
+      <Analytics />
     </Router>
   );
 }
