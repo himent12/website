@@ -61,8 +61,27 @@ const WebScraper = () => {
 
       setScrapedData(data.data);
     } catch (err) {
-      setError(`Scraping error: ${err.message}`);
-      console.error('Scraping error:', err);
+      // Ensure error message is properly serialized
+      let errorMessage = 'Unknown error occurred';
+
+      if (err && typeof err === 'object') {
+        if (err.message && typeof err.message === 'string') {
+          errorMessage = err.message;
+        } else if (err.toString && typeof err.toString === 'function') {
+          errorMessage = err.toString();
+        } else {
+          errorMessage = JSON.stringify(err);
+        }
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+
+      setError(`Scraping error: ${errorMessage}`);
+      console.error('Scraping error details:', {
+        error: err,
+        message: errorMessage,
+        type: typeof err
+      });
     } finally {
       setIsScrapingLoading(false);
     }
@@ -120,8 +139,27 @@ const WebScraper = () => {
         saveTranslation(scrapedData.content, translated);
       }
     } catch (err) {
-      setError(`Translation error: ${err.message}`);
-      console.error('Translation error:', err);
+      // Ensure error message is properly serialized
+      let errorMessage = 'Unknown error occurred';
+
+      if (err && typeof err === 'object') {
+        if (err.message && typeof err.message === 'string') {
+          errorMessage = err.message;
+        } else if (err.toString && typeof err.toString === 'function') {
+          errorMessage = err.toString();
+        } else {
+          errorMessage = JSON.stringify(err);
+        }
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+
+      setError(`Translation error: ${errorMessage}`);
+      console.error('Translation error details:', {
+        error: err,
+        message: errorMessage,
+        type: typeof err
+      });
     } finally {
       setIsTranslatingLoading(false);
     }
