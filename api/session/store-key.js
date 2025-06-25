@@ -1,38 +1,7 @@
 // Vercel serverless function for storing API keys in session
-const crypto = require('crypto');
-
-// Server-side encryption utilities for API keys
-const ALGORITHM = 'aes-256-cbc';
-
-// Generate a consistent encryption key for the session
-// In production, this should be a fixed key stored securely
-const getEncryptionKey = () => {
-  // Use a deterministic key generation for session consistency
-  // This ensures the same key is used across serverless function invocations
-  const seed = 'translation-app-encryption-key-v1';
-  return crypto.createHash('sha256').update(seed).digest();
-};
-
-const ENCRYPTION_KEY = getEncryptionKey();
-
-const encryptApiKey = (apiKey) => {
-  try {
-    // Generate a random 16-byte IV for each encryption
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
-    
-    let encrypted = cipher.update(apiKey, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    
-    return {
-      encrypted,
-      iv: iv.toString('hex')
-    };
-  } catch (error) {
-    console.error('Encryption error:', error);
-    throw new Error('Failed to encrypt API key');
-  }
-};
+const { validateApiKeyFormat } = require('../../lib/validators/sessionValidator');
+const { createSessionData } = require('../../lib/services/sessionService');
+const { createCookieOptions } = require('../../lib/utils/cookieParser');
 
 export default async function handler(req, res) {
   // Set CORS headers
@@ -57,60 +26,21 @@ export default async function handler(req, res) {
   try {
     const { keyName, keyValue } = req.body;
     
-    if (!keyName || !keyValue) {
+    // Validate API key format using shared validator
+    const validation = validateApiKeyFormat(keyName, keyValue);
+    if (!validation.valid) {
       return res.status(400).json({
-        error: 'Missing required fields',
-        message: 'Both keyName and keyValue are required'
+        error: validation.error,
+        message: validation.message
       });
     }
     
-    // Validate API key format
-    if (keyName === 'deepseek') {
-      if (!keyValue.startsWith('sk-')) {
-        return res.status(400).json({
-          error: 'Invalid API key format',
-          message: 'DeepSeek API keys must start with "sk-"'
-        });
-      }
-      
-      if (keyValue.length < 20 || keyValue.length > 100) {
-        return res.status(400).json({
-          error: 'Invalid API key length',
-          message: 'DeepSeek API key length appears invalid'
-        });
-      }
-    }
+    // Create session data using shared service
+    const sessionResult = createSessionData(keyName, keyValue);
     
-    // Encrypt the API key
-    const encryptedKey = encryptApiKey(keyValue);
-    
-    // In serverless environment, we'll store the encrypted key in a secure cookie
-    // since we don't have persistent session storage
-    const sessionData = {
-      apiKeys: {
-        [keyName]: {
-          encrypted: encryptedKey.encrypted,
-          iv: encryptedKey.iv,
-          storedAt: new Date().toISOString(),
-          keyLength: keyValue.length,
-          keyPrefix: keyValue.substring(0, 6) + '...'
-        }
-      }
-    };
-    
-    // Create a secure cookie with the session data
-    const cookieValue = Buffer.from(JSON.stringify(sessionData)).toString('base64');
-    
-    // Set secure cookie (httpOnly, secure in production, sameSite)
+    // Set secure cookie using shared utility
     const isProduction = process.env.NODE_ENV === 'production';
-    const cookieOptions = [
-      `session-${keyName}=${cookieValue}`,
-      'HttpOnly',
-      'Path=/',
-      'Max-Age=3600', // 1 hour
-      isProduction ? 'Secure' : '',
-      isProduction ? 'SameSite=Strict' : 'SameSite=Lax'
-    ].filter(Boolean).join('; ');
+    const cookieOptions = createCookieOptions(keyName, sessionResult.cookieValue, isProduction);
     
     res.setHeader('Set-Cookie', cookieOptions);
     
@@ -119,12 +49,7 @@ export default async function handler(req, res) {
     res.json({
       success: true,
       message: 'API key stored successfully',
-      metadata: {
-        keyName,
-        storedAt: sessionData.apiKeys[keyName].storedAt,
-        keyLength: sessionData.apiKeys[keyName].keyLength,
-        keyPrefix: sessionData.apiKeys[keyName].keyPrefix
-      }
+      metadata: sessionResult.metadata
     });
     
   } catch (error) {

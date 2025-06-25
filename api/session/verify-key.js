@@ -1,22 +1,5 @@
 // Vercel serverless function for verifying API keys in session
-
-// Helper function to parse cookies from request headers
-const parseCookies = (req) => {
-  const cookies = {};
-  const cookieHeader = req.headers.cookie;
-  
-  if (cookieHeader) {
-    cookieHeader.split(';').forEach(cookie => {
-      const [name, ...rest] = cookie.split('=');
-      const value = rest.join('=').trim();
-      if (name && value) {
-        cookies[name.trim()] = decodeURIComponent(value);
-      }
-    });
-  }
-  
-  return cookies;
-};
+const { verifySessionApiKeyFromCookies } = require('../../lib/services/sessionService');
 
 export default async function handler(req, res) {
   // Set CORS headers
@@ -47,41 +30,9 @@ export default async function handler(req, res) {
       });
     }
     
-    // In serverless environment, check for the secure cookie
-    const cookies = parseCookies(req);
-    const sessionCookie = cookies[`session-${keyName}`];
-    
-    if (sessionCookie) {
-      try {
-        // Decode the session data from the cookie
-        const sessionData = JSON.parse(Buffer.from(sessionCookie, 'base64').toString());
-        
-        if (sessionData.apiKeys && sessionData.apiKeys[keyName]) {
-          res.json({
-            hasKey: true,
-            metadata: {
-              keyName,
-              storedAt: sessionData.apiKeys[keyName].storedAt,
-              keyLength: sessionData.apiKeys[keyName].keyLength,
-              keyPrefix: sessionData.apiKeys[keyName].keyPrefix
-            }
-          });
-        } else {
-          res.json({
-            hasKey: false
-          });
-        }
-      } catch (decodeError) {
-        console.error('Error decoding session cookie:', decodeError);
-        res.json({
-          hasKey: false
-        });
-      }
-    } else {
-      res.json({
-        hasKey: false
-      });
-    }
+    // Verify API key using shared service
+    const result = verifySessionApiKeyFromCookies(req, keyName);
+    res.json(result);
     
   } catch (error) {
     console.error('Error verifying API key:', error);

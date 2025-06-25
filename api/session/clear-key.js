@@ -1,4 +1,5 @@
 // Vercel serverless function for clearing API keys from session
+const { createExpiredCookieOptions } = require('../../lib/utils/cookieParser');
 
 export default async function handler(req, res) {
   // Set CORS headers
@@ -29,17 +30,9 @@ export default async function handler(req, res) {
       });
     }
     
-    // In serverless environment, clear the secure cookie by setting it to expire
+    // Clear the secure cookie using shared utility
     const isProduction = process.env.NODE_ENV === 'production';
-    const cookieOptions = [
-      `session-${keyName}=`,
-      'HttpOnly',
-      'Path=/',
-      'Max-Age=0', // Expire immediately
-      'Expires=Thu, 01 Jan 1970 00:00:00 GMT', // Set to past date
-      isProduction ? 'Secure' : '',
-      isProduction ? 'SameSite=Strict' : 'SameSite=Lax'
-    ].filter(Boolean).join('; ');
+    const cookieOptions = createExpiredCookieOptions(keyName, isProduction);
     
     res.setHeader('Set-Cookie', cookieOptions);
     

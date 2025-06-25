@@ -1,4 +1,6 @@
 // Vercel serverless function for health check
+const { handleHealthCheck } = require('../lib/routes/healthRoutes');
+
 export default async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -19,17 +21,6 @@ export default async function handler(req, res) {
     });
   }
 
-  res.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    message: 'Chinese-English Translation API Server (Serverless)',
-    endpoints: {
-      translate: 'POST /api/translate',
-      scrape: 'POST /api/scrape',
-      storeKey: 'POST /api/session/store-key',
-      verifyKey: 'GET /api/session/verify-key',
-      clearKey: 'DELETE /api/session/clear-key'
-    }
-  });
+  // Use shared health check handler
+  handleHealthCheck(req, res);
 }
