@@ -220,6 +220,7 @@ const Documents = () => {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 };
