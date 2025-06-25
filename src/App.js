@@ -4,6 +4,7 @@ import { SpeedInsights } from "@vercel/speed-insights/react";
 import { useEffect } from 'react';
 import TabContainer from './components/TabContainer';
 import ReadingMode from './components/ReadingMode';
+import ReaderDemo from './components/ReaderDemo';
 import { initializeMobileOptimizations } from './hooks/useMobileDetection';
 import './App.css';
 
@@ -18,6 +19,7 @@ function App() {
       <Routes>
         <Route path="/" element={<TabContainer />} />
         <Route path="/reading" element={<ReadingMode />} />
+        <Route path="/demo" element={<ReaderDemo />} />
       </Routes>
       <SpeedInsights />
     </Router>

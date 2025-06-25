@@ -1,16 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const ReadingMode = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [fontSize, setFontSize] = useState('text-lg');
+  const contentRef = useRef(null);
+  
+  // Reading settings state
+  const [readingMode, setReadingMode] = useState('day'); // day, night, sepia
+  const [fontSize, setFontSize] = useState(18);
+  const [fontFamily, setFontFamily] = useState('lora');
+  const [lineHeight, setLineHeight] = useState(1.8);
+  const [maxWidth, setMaxWidth] = useState(700);
+  const [showSettings, setShowSettings] = useState(false);
+  
+  // Navigation and progress state
   const [readingProgress, setReadingProgress] = useState(0);
+  const [currentChapter, setCurrentChapter] = useState(1);
+  const [totalChapters] = useState(1); // For future multi-chapter support
+  const [bookmarks, setBookmarks] = useState([]);
+  const [showBookmarks, setShowBookmarks] = useState(false);
+  
+  // Animation and interaction state
+  const [isScrolling, setIsScrolling] = useState(false);
+  const [lastScrollTime, setLastScrollTime] = useState(0);
+  const [showControls, setShowControls] = useState(true);
   
   // Get the translated text from navigation state
   const translatedText = location.state?.translatedText || '';
-  // const originalText = location.state?.originalText || ''; // Reserved for future use
+  const originalTitle = location.state?.title || 'Translated Document';
   
   // Redirect if no text is provided
   useEffect(() => {
@@ -19,216 +37,534 @@ const ReadingMode = () => {
     }
   }, [translatedText, navigate]);
 
-  // Calculate reading progress based on scroll position
+  // Load saved settings from localStorage
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollTop = window.pageYOffset;
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const scrollPercent = (scrollTop / docHeight) * 100;
-      setReadingProgress(Math.min(scrollPercent, 100));
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const savedSettings = localStorage.getItem('readerSettings');
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+      setReadingMode(settings.readingMode || 'day');
+      setFontSize(settings.fontSize || 18);
+      setFontFamily(settings.fontFamily || 'lora');
+      setLineHeight(settings.lineHeight || 1.8);
+      setMaxWidth(settings.maxWidth || 700);
+    }
+    
+    const savedBookmarks = localStorage.getItem('readerBookmarks');
+    if (savedBookmarks) {
+      setBookmarks(JSON.parse(savedBookmarks));
+    }
   }, []);
 
-  // Format text into paragraphs
+  // Save settings to localStorage
+  const saveSettings = useCallback(() => {
+    const settings = {
+      readingMode,
+      fontSize,
+      fontFamily,
+      lineHeight,
+      maxWidth
+    };
+    localStorage.setItem('readerSettings', JSON.stringify(settings));
+  }, [readingMode, fontSize, fontFamily, lineHeight, maxWidth]);
+
+  useEffect(() => {
+    saveSettings();
+  }, [saveSettings]);
+
+  // Enhanced scroll tracking with smooth progress updates
+  useEffect(() => {
+    let ticking = false;
+    
+    const handleScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const scrollTop = window.pageYOffset;
+          const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+          const scrollPercent = Math.min((scrollTop / docHeight) * 100, 100);
+          
+          setReadingProgress(scrollPercent);
+          setIsScrolling(true);
+          setLastScrollTime(Date.now());
+          
+          // Auto-hide controls when scrolling
+          setShowControls(false);
+          
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    // Show controls after scrolling stops
+    const showControlsTimer = setInterval(() => {
+      if (Date.now() - lastScrollTime > 2000 && isScrolling) {
+        setIsScrolling(false);
+        setShowControls(true);
+      }
+    }, 100);
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearInterval(showControlsTimer);
+    };
+  }, [lastScrollTime, isScrolling]);
+
+  // Format text with markdown-style formatting
+  const formatText = (text) => {
+    return text
+      // Convert **** to bold
+      .replace(/\*\*\*\*(.*?)\*\*\*\*/g, '<strong>$1</strong>')
+      // Convert ** to italic
+      .replace(/\*\*(.*?)\*\*/g, '<em>$1</em>')
+      // Handle line breaks
+      .replace(/\n/g, '<br />');
+  };
+
+  // Split text into paragraphs
   const formatTextIntoParagraphs = (text) => {
     return text
-      .split(/\n\s*\n/) // Split on double line breaks
+      .split(/\n\s*\n/)
       .filter(paragraph => paragraph.trim().length > 0)
       .map(paragraph => paragraph.trim());
   };
 
   const paragraphs = formatTextIntoParagraphs(translatedText);
 
+  // Theme configurations
+  const themes = {
+    day: {
+      bg: 'bg-gradient-to-br from-amber-50 to-orange-50',
+      contentBg: 'bg-white/80 backdrop-blur-sm',
+      text: 'text-gray-900',
+      secondaryText: 'text-gray-600',
+      border: 'border-gray-200',
+      shadow: 'shadow-lg shadow-gray-200/50',
+      controlsBg: 'bg-white/95 backdrop-blur-md',
+      buttonHover: 'hover:bg-gray-100',
+      accent: 'text-amber-600'
+    },
+    night: {
+      bg: 'bg-gradient-to-br from-gray-900 to-slate-900',
+      contentBg: 'bg-gray-800/80 backdrop-blur-sm',
+      text: 'text-gray-100',
+      secondaryText: 'text-gray-300',
+      border: 'border-gray-700',
+      shadow: 'shadow-lg shadow-black/50',
+      controlsBg: 'bg-gray-800/95 backdrop-blur-md',
+      buttonHover: 'hover:bg-gray-700',
+      accent: 'text-blue-400'
+    },
+    sepia: {
+      bg: 'bg-gradient-to-br from-amber-100 to-yellow-100',
+      contentBg: 'bg-amber-50/80 backdrop-blur-sm',
+      text: 'text-amber-900',
+      secondaryText: 'text-amber-700',
+      border: 'border-amber-200',
+      shadow: 'shadow-lg shadow-amber-200/50',
+      controlsBg: 'bg-amber-50/95 backdrop-blur-md',
+      buttonHover: 'hover:bg-amber-100',
+      accent: 'text-amber-700'
+    }
+  };
+
+  const currentTheme = themes[readingMode];
+
+  // Navigation functions
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const fontSizeOptions = [
-    { label: 'Small', value: 'text-base', size: '16px' },
-    { label: 'Medium', value: 'text-lg', size: '18px' },
-    { label: 'Large', value: 'text-xl', size: '20px' },
-    { label: 'Extra Large', value: 'text-2xl', size: '24px' }
+  const scrollToBottom = () => {
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+  };
+
+  // Bookmark functions
+  const addBookmark = () => {
+    const scrollPercent = Math.round(readingProgress);
+    const newBookmark = {
+      id: Date.now(),
+      position: scrollPercent,
+      timestamp: new Date().toLocaleString(),
+      preview: paragraphs[Math.floor(paragraphs.length * (scrollPercent / 100))]?.substring(0, 100) + '...'
+    };
+    
+    const updatedBookmarks = [...bookmarks, newBookmark];
+    setBookmarks(updatedBookmarks);
+    localStorage.setItem('readerBookmarks', JSON.stringify(updatedBookmarks));
+  };
+
+  const removeBookmark = (id) => {
+    const updatedBookmarks = bookmarks.filter(bookmark => bookmark.id !== id);
+    setBookmarks(updatedBookmarks);
+    localStorage.setItem('readerBookmarks', JSON.stringify(updatedBookmarks));
+  };
+
+  const jumpToBookmark = (position) => {
+    const targetScroll = (document.documentElement.scrollHeight - window.innerHeight) * (position / 100);
+    window.scrollTo({ top: targetScroll, behavior: 'smooth' });
+    setShowBookmarks(false);
+  };
+
+  // Font options
+  const fontOptions = [
+    { name: 'Lora', value: 'lora', class: 'font-lora' },
+    { name: 'System', value: 'system', class: 'font-sans' },
+    { name: 'Serif', value: 'serif', class: 'font-serif' },
+    { name: 'Chinese', value: 'chinese', class: 'font-chinese' }
   ];
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
-      isDarkMode
-        ? 'bg-gray-900 text-gray-100'
-        : 'bg-amber-50 text-gray-900'
-    }`}>
-      {/* Mobile-Optimized Progress Bar */}
-      <div className="fixed top-0 left-0 w-full h-1 bg-gray-200 dark:bg-gray-700 z-50">
+    <div className={`min-h-screen transition-all duration-500 ${currentTheme.bg}`}>
+      {/* Enhanced Progress Bar */}
+      <div className="fixed top-0 left-0 w-full h-1 bg-black/10 z-50">
         <div
-          className="h-full bg-blue-500 transition-all duration-150"
+          className={`h-full transition-all duration-300 ${currentTheme.accent.replace('text-', 'bg-')}`}
           style={{ width: `${readingProgress}%` }}
         />
       </div>
 
-      {/* Mobile-First Header Controls */}
-      <div className={`sticky top-1 z-40 border-b transition-colors duration-300 ${
-        isDarkMode
-          ? 'bg-gray-800 border-gray-700'
-          : 'bg-white border-gray-200'
+      {/* Floating Controls Header */}
+      <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-40 transition-all duration-300 ${
+        showControls ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
       }`}>
-        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-            {/* Back Button */}
-            <button
-              onClick={() => navigate('/')}
-              className={`flex items-center justify-center sm:justify-start space-x-2
-                         min-h-[44px] px-4 py-2 rounded-xl transition-colors touch-manipulation ${
-                isDarkMode
-                  ? 'text-gray-300 hover:text-white hover:bg-gray-700'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              <span className="font-medium">Back to Translator</span>
-            </button>
-
-            {/* Mobile-Optimized Controls */}
-            <div className="flex items-center justify-center space-x-3 sm:space-x-4">
-              {/* Font Size Control */}
-              <div className="flex items-center space-x-2">
-                <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  <span className="hidden sm:inline">Font:</span>
-                  <span className="sm:hidden">A</span>
-                </span>
-                <select
-                  value={fontSize}
-                  onChange={(e) => setFontSize(e.target.value)}
-                  className={`min-h-[44px] px-3 py-2 rounded-xl border text-sm font-medium
-                             touch-manipulation ${
-                    isDarkMode
-                      ? 'bg-gray-700 border-gray-600 text-gray-200'
-                      : 'bg-white border-gray-300 text-gray-900'
-                  }`}
-                  style={{ fontSize: '16px' }} // Prevent zoom on iOS
-                >
-                  {fontSizeOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Dark Mode Toggle */}
-              <button
-                onClick={() => setIsDarkMode(!isDarkMode)}
-                className={`min-h-[44px] p-3 rounded-xl transition-colors touch-manipulation ${
-                  isDarkMode
-                    ? 'text-yellow-400 hover:bg-gray-700'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-                title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              >
-                {isDarkMode ? (
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                  </svg>
-                )}
-              </button>
-
-              {/* Progress Indicator */}
-              <div className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                <span className="hidden sm:inline">Progress: </span>
-                {Math.round(readingProgress)}%
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile-Optimized Main Reading Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {/* Mobile-Optimized Document Info */}
-        <div className={`mb-6 sm:mb-8 p-4 sm:p-6 rounded-xl border ${
-          isDarkMode
-            ? 'bg-gray-800 border-gray-700'
-            : 'bg-white border-gray-200'
-        }`}>
-          <h1 className={`text-xl sm:text-2xl lg:text-3xl font-bold mb-3 ${
-            isDarkMode ? 'text-gray-100' : 'text-gray-900'
-          }`}>
-            Reading Mode
-          </h1>
-          <div className={`text-xs sm:text-sm space-y-1 sm:space-y-0 sm:space-x-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            <span className="block sm:inline">Translated from Chinese</span>
-            <span className="hidden sm:inline">•</span>
-            <span className="block sm:inline">{paragraphs.length} paragraph{paragraphs.length !== 1 ? 's' : ''}</span>
-            <span className="hidden sm:inline">•</span>
-            <span className="block sm:inline">
-              Estimated reading time: {Math.ceil(translatedText.split(' ').length / 200)} min
-            </span>
-          </div>
-        </div>
-
-        {/* Mobile-Optimized Reading Content */}
-        <article className="prose prose-lg max-w-none">
-          {paragraphs.map((paragraph, index) => (
-            <p
-              key={index}
-              className={`mb-6 sm:mb-8 leading-relaxed ${fontSize} ${
-                isDarkMode ? 'text-gray-200' : 'text-gray-800'
-              }`}
-              style={{
-                lineHeight: '1.8',
-                fontSize: window.innerWidth < 640 ? '18px' : undefined // Ensure readability on mobile
-              }}
-            >
-              {paragraph}
-            </p>
-          ))}
-        </article>
-
-        {/* Mobile-Optimized End of Document */}
-        <div className={`mt-12 sm:mt-16 pt-8 border-t text-center ${
-          isDarkMode ? 'border-gray-700' : 'border-gray-200'
-        }`}>
-          <p className={`text-sm sm:text-base mb-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            End of document
-          </p>
+        <div className={`flex items-center space-x-2 px-4 py-2 rounded-full ${currentTheme.controlsBg} ${currentTheme.border} border ${currentTheme.shadow}`}>
+          {/* Back Button */}
           <button
             onClick={() => navigate('/')}
-            className={`min-h-[48px] px-6 py-3 rounded-xl font-medium transition-colors touch-manipulation ${
-              isDarkMode
-                ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                : 'bg-blue-500 hover:bg-blue-600 text-white'
-            }`}
+            className={`p-2 rounded-full transition-colors ${currentTheme.buttonHover}`}
+            title="Back to Translator"
           >
-            Translate Another Document
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+
+          {/* Chapter Navigation */}
+          <div className="flex items-center space-x-1">
+            <button
+              disabled={currentChapter <= 1}
+              className={`p-2 rounded-full transition-colors ${currentChapter <= 1 ? 'opacity-50 cursor-not-allowed' : currentTheme.buttonHover}`}
+              title="Previous Chapter"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              </svg>
+            </button>
+            
+            <span className={`px-3 py-1 text-sm font-medium ${currentTheme.secondaryText}`}>
+              {currentChapter} / {totalChapters}
+            </span>
+            
+            <button
+              disabled={currentChapter >= totalChapters}
+              className={`p-2 rounded-full transition-colors ${currentChapter >= totalChapters ? 'opacity-50 cursor-not-allowed' : currentTheme.buttonHover}`}
+              title="Next Chapter"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Progress Display */}
+          <div className={`px-3 py-1 text-sm font-medium ${currentTheme.secondaryText}`}>
+            {Math.round(readingProgress)}%
+          </div>
+
+          {/* Settings Toggle */}
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className={`p-2 rounded-full transition-colors ${currentTheme.buttonHover} ${showSettings ? currentTheme.accent : ''}`}
+            title="Reading Settings"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
+
+          {/* Bookmarks Toggle */}
+          <button
+            onClick={() => setShowBookmarks(!showBookmarks)}
+            className={`p-2 rounded-full transition-colors ${currentTheme.buttonHover} ${showBookmarks ? currentTheme.accent : ''}`}
+            title="Bookmarks"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+            </svg>
           </button>
         </div>
       </div>
 
-      {/* Mobile-Optimized Floating Action Button - Scroll to Top */}
-      {readingProgress > 10 && (
-        <button
-          onClick={scrollToTop}
-          className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6
-                     min-h-[56px] min-w-[56px] p-3 rounded-full shadow-lg
-                     transition-all duration-300 touch-manipulation z-40 ${
-            isDarkMode
-              ? 'bg-gray-700 hover:bg-gray-600 text-gray-200'
-              : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300'
-          }`}
-          title="Scroll to top"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-          </svg>
-        </button>
+      {/* Settings Panel */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`w-full max-w-md ${currentTheme.controlsBg} rounded-2xl ${currentTheme.shadow} border ${currentTheme.border} overflow-hidden`}>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className={`text-lg font-semibold ${currentTheme.text}`}>Reading Settings</h3>
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className={`p-2 rounded-full ${currentTheme.buttonHover}`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Reading Mode */}
+                <div>
+                  <label className={`block text-sm font-medium mb-3 ${currentTheme.text}`}>Reading Mode</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {Object.entries(themes).map(([mode, theme]) => (
+                      <button
+                        key={mode}
+                        onClick={() => setReadingMode(mode)}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          readingMode === mode 
+                            ? `${theme.border} ${theme.bg}` 
+                            : `border-transparent ${currentTheme.buttonHover}`
+                        }`}
+                      >
+                        <div className={`w-full h-8 rounded ${theme.bg} mb-2`}></div>
+                        <span className={`text-xs font-medium capitalize ${currentTheme.text}`}>{mode}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Font Family */}
+                <div>
+                  <label className={`block text-sm font-medium mb-3 ${currentTheme.text}`}>Font Family</label>
+                  <select
+                    value={fontFamily}
+                    onChange={(e) => setFontFamily(e.target.value)}
+                    className={`w-full p-3 rounded-lg border ${currentTheme.border} ${currentTheme.controlsBg} ${currentTheme.text}`}
+                  >
+                    {fontOptions.map(font => (
+                      <option key={font.value} value={font.value}>{font.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Font Size */}
+                <div>
+                  <label className={`block text-sm font-medium mb-3 ${currentTheme.text}`}>
+                    Font Size: {fontSize}px
+                  </label>
+                  <input
+                    type="range"
+                    min="14"
+                    max="28"
+                    value={fontSize}
+                    onChange={(e) => setFontSize(Number(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Line Height */}
+                <div>
+                  <label className={`block text-sm font-medium mb-3 ${currentTheme.text}`}>
+                    Line Height: {lineHeight}
+                  </label>
+                  <input
+                    type="range"
+                    min="1.4"
+                    max="2.2"
+                    step="0.1"
+                    value={lineHeight}
+                    onChange={(e) => setLineHeight(Number(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Max Width */}
+                <div>
+                  <label className={`block text-sm font-medium mb-3 ${currentTheme.text}`}>
+                    Content Width: {maxWidth}px
+                  </label>
+                  <input
+                    type="range"
+                    min="600"
+                    max="900"
+                    step="50"
+                    value={maxWidth}
+                    onChange={(e) => setMaxWidth(Number(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
+
+      {/* Bookmarks Panel */}
+      {showBookmarks && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`w-full max-w-md ${currentTheme.controlsBg} rounded-2xl ${currentTheme.shadow} border ${currentTheme.border} overflow-hidden`}>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className={`text-lg font-semibold ${currentTheme.text}`}>Bookmarks</h3>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={addBookmark}
+                    className={`p-2 rounded-full ${currentTheme.buttonHover}`}
+                    title="Add Bookmark"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setShowBookmarks(false)}
+                    className={`p-2 rounded-full ${currentTheme.buttonHover}`}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {bookmarks.length === 0 ? (
+                  <p className={`text-center py-8 ${currentTheme.secondaryText}`}>
+                    No bookmarks yet. Add one to save your reading position.
+                  </p>
+                ) : (
+                  bookmarks.map(bookmark => (
+                    <div
+                      key={bookmark.id}
+                      className={`p-3 rounded-lg border ${currentTheme.border} ${currentTheme.buttonHover} cursor-pointer group`}
+                      onClick={() => jumpToBookmark(bookmark.position)}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className={`text-sm font-medium ${currentTheme.text} mb-1`}>
+                            {bookmark.position}% - {bookmark.timestamp}
+                          </div>
+                          <div className={`text-xs ${currentTheme.secondaryText} line-clamp-2`}>
+                            {bookmark.preview}
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeBookmark(bookmark.id);
+                          }}
+                          className={`p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${currentTheme.buttonHover}`}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Reading Content */}
+      <div className="pt-20 pb-16">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          {/* Document Header */}
+          <div className={`mb-8 p-6 rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border}`}>
+            <h1 className={`text-2xl sm:text-3xl font-bold mb-4 ${currentTheme.text}`}>
+              {originalTitle}
+            </h1>
+            <div className={`flex flex-wrap items-center gap-4 text-sm ${currentTheme.secondaryText}`}>
+              <span>Translated from Chinese</span>
+              <span>•</span>
+              <span>{paragraphs.length} paragraphs</span>
+              <span>•</span>
+              <span>~{Math.ceil(translatedText.split(' ').length / 200)} min read</span>
+            </div>
+          </div>
+
+          {/* Reading Content */}
+          <article
+            ref={contentRef}
+            className={`${currentTheme.contentBg} ${currentTheme.shadow} rounded-2xl border ${currentTheme.border} overflow-hidden`}
+            style={{ maxWidth: `${maxWidth}px`, margin: '0 auto' }}
+          >
+            <div className="p-8 sm:p-12">
+              {paragraphs.map((paragraph, index) => (
+                <p
+                  key={index}
+                  className={`mb-8 ${currentTheme.text} ${fontOptions.find(f => f.value === fontFamily)?.class || 'font-lora'}`}
+                  style={{
+                    fontSize: `${fontSize}px`,
+                    lineHeight: lineHeight,
+                    textAlign: 'justify',
+                    textJustify: 'inter-word'
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html: formatText(paragraph)
+                  }}
+                />
+              ))}
+            </div>
+          </article>
+
+          {/* End of Document */}
+          <div className={`mt-12 text-center p-8 rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border}`}>
+            <div className={`text-lg font-medium mb-4 ${currentTheme.text}`}>
+              End of Document
+            </div>
+            <p className={`mb-6 ${currentTheme.secondaryText}`}>
+              Thank you for reading! Would you like to translate another document?
+            </p>
+            <button
+              onClick={() => navigate('/')}
+              className={`px-8 py-3 rounded-full font-medium transition-all transform hover:scale-105 ${
+                readingMode === 'night' 
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                  : 'bg-amber-600 hover:bg-amber-700 text-white'
+              } shadow-lg`}
+            >
+              Translate Another Document
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Floating Action Buttons */}
+      <div className="fixed bottom-6 right-6 flex flex-col space-y-3 z-40">
+        {/* Scroll to Top */}
+        {readingProgress > 10 && (
+          <button
+            onClick={scrollToTop}
+            className={`w-12 h-12 rounded-full ${currentTheme.controlsBg} ${currentTheme.shadow} border ${currentTheme.border} flex items-center justify-center transition-all transform hover:scale-110`}
+            title="Scroll to Top"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+            </svg>
+          </button>
+        )}
+
+        {/* Scroll to Bottom */}
+        {readingProgress < 90 && (
+          <button
+            onClick={scrollToBottom}
+            className={`w-12 h-12 rounded-full ${currentTheme.controlsBg} ${currentTheme.shadow} border ${currentTheme.border} flex items-center justify-center transition-all transform hover:scale-110`}
+            title="Scroll to Bottom"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </button>
+        )}
+      </div>
     </div>
   );
 };
