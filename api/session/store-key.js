@@ -1,24 +1,16 @@
 // Vercel serverless function for storing API keys in session
-require('dotenv').config();
 const crypto = require('crypto');
 
 // Server-side encryption utilities for API keys
 const ALGORITHM = 'aes-256-cbc';
 
-// Ensure encryption key is exactly 32 bytes for AES-256
+// Generate a consistent encryption key for the session
+// In production, this should be a fixed key stored securely
 const getEncryptionKey = () => {
-  const envKey = process.env.ENCRYPTION_KEY;
-  if (envKey) {
-    // If key is provided, ensure it's 32 bytes
-    const keyBuffer = Buffer.from(envKey, 'hex');
-    if (keyBuffer.length === 32) {
-      return keyBuffer;
-    }
-    // If not 32 bytes, hash it to get consistent 32-byte key
-    return crypto.createHash('sha256').update(envKey).digest();
-  }
-  // Generate a new 32-byte key if none provided
-  return crypto.randomBytes(32);
+  // Use a deterministic key generation for session consistency
+  // This ensures the same key is used across serverless function invocations
+  const seed = 'translation-app-encryption-key-v1';
+  return crypto.createHash('sha256').update(seed).digest();
 };
 
 const ENCRYPTION_KEY = getEncryptionKey();
@@ -110,13 +102,14 @@ export default async function handler(req, res) {
     const cookieValue = Buffer.from(JSON.stringify(sessionData)).toString('base64');
     
     // Set secure cookie (httpOnly, secure in production, sameSite)
+    const isProduction = process.env.NODE_ENV === 'production';
     const cookieOptions = [
       `session-${keyName}=${cookieValue}`,
       'HttpOnly',
       'Path=/',
       'Max-Age=3600', // 1 hour
-      process.env.NODE_ENV === 'production' ? 'Secure' : '',
-      process.env.NODE_ENV === 'production' ? 'SameSite=Strict' : 'SameSite=Lax'
+      isProduction ? 'Secure' : '',
+      isProduction ? 'SameSite=Strict' : 'SameSite=Lax'
     ].filter(Boolean).join('; ');
     
     res.setHeader('Set-Cookie', cookieOptions);

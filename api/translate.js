@@ -1,21 +1,17 @@
 // Vercel serverless function for translation
-require('dotenv').config();
 const OpenAI = require('openai');
 const crypto = require('crypto');
 
 // Server-side encryption utilities for API keys
 const ALGORITHM = 'aes-256-cbc';
 
+// Generate a consistent encryption key for the session
+// In production, this should be a fixed key stored securely
 const getEncryptionKey = () => {
-  const envKey = process.env.ENCRYPTION_KEY;
-  if (envKey) {
-    const keyBuffer = Buffer.from(envKey, 'hex');
-    if (keyBuffer.length === 32) {
-      return keyBuffer;
-    }
-    return crypto.createHash('sha256').update(envKey).digest();
-  }
-  return crypto.randomBytes(32);
+  // Use a deterministic key generation for session consistency
+  // This ensures the same key is used across serverless function invocations
+  const seed = 'translation-app-encryption-key-v1';
+  return crypto.createHash('sha256').update(seed).digest();
 };
 
 const ENCRYPTION_KEY = getEncryptionKey();
@@ -143,11 +139,7 @@ const validateTranslationRequest = (req) => {
   return { valid: true };
 };
 
-// Initialize DeepSeek client
-const deepseek = new OpenAI({
-  baseURL: 'https://api.deepseek.com',
-  apiKey: process.env.DEEPSEEK_API_KEY,
-});
+// No pre-initialized client - we only use user-provided API keys
 
 export default async function handler(req, res) {
   // DIAGNOSTIC: Function entry point
@@ -157,15 +149,8 @@ export default async function handler(req, res) {
   console.log(`   - URL: ${req.url}`);
   console.log(`   - Headers: ${JSON.stringify(req.headers, null, 2)}`);
   
-  // DIAGNOSTIC: Environment variables check
-  console.log('🔧 DIAGNOSTIC: Environment variables check');
-  console.log(`   - DEEPSEEK_API_KEY exists: ${!!process.env.DEEPSEEK_API_KEY}`);
-  console.log(`   - DEEPSEEK_API_KEY length: ${process.env.DEEPSEEK_API_KEY?.length || 0}`);
-  console.log(`   - DEEPSEEK_API_KEY starts with sk-: ${process.env.DEEPSEEK_API_KEY?.startsWith('sk-') || false}`);
-  console.log(`   - SESSION_SECRET exists: ${!!process.env.SESSION_SECRET}`);
-  console.log(`   - SESSION_SECRET is placeholder: ${process.env.SESSION_SECRET === 'your-super-secret-session-key-change-this-in-production'}`);
-  console.log(`   - ENCRYPTION_KEY exists: ${!!process.env.ENCRYPTION_KEY}`);
-  console.log(`   - ENCRYPTION_KEY is placeholder: ${process.env.ENCRYPTION_KEY === 'your-32-byte-encryption-key-change-this-in-production'}`);
+  // DIAGNOSTIC: Session-based API key system (no environment variables used)
+  console.log('🔧 DIAGNOSTIC: User-provided API key system active');
   console.log(`   - NODE_ENV: ${process.env.NODE_ENV}`);
 
   // Set CORS headers
@@ -232,10 +217,10 @@ export default async function handler(req, res) {
     console.log(`   - Text length: ${text.length}`);
     console.log(`   - Request timestamp: ${new Date().toISOString()}`);
 
-    // DIAGNOSTIC: API key retrieval
-    console.log('🔑 DIAGNOSTIC: API key retrieval process');
+    // DIAGNOSTIC: API key retrieval from user session ONLY
+    console.log('🔑 DIAGNOSTIC: API key retrieval from user session');
     
-    // Get API key from session storage or environment
+    // Get API key from session storage ONLY - no environment fallback
     let sessionApiKey;
     try {
       sessionApiKey = getSessionApiKey(req, 'deepseek');
@@ -249,28 +234,19 @@ export default async function handler(req, res) {
       sessionApiKey = null;
     }
     
-    let apiKeyToUse = sessionApiKey;
-    
-    // Fallback to server's default API key if no session key
-    if (!apiKeyToUse) {
-      apiKeyToUse = process.env.DEEPSEEK_API_KEY;
-      console.log(`   - Fallback to environment API key: ${!!apiKeyToUse}`);
-      if (apiKeyToUse) {
-        console.log(`   - Environment API key length: ${apiKeyToUse.length}`);
-        console.log(`   - Environment API key starts with sk-: ${apiKeyToUse.startsWith('sk-')}`);
-      }
-    }
+    // ONLY use user-provided API key from session - NO environment fallback
+    const apiKeyToUse = sessionApiKey;
 
-    // Check if any API key is available
-    if (!apiKeyToUse || apiKeyToUse === 'your_api_key_here') {
-      console.error('❌ DIAGNOSTIC: No valid API key available');
-      return res.status(500).json({
-        error: 'API configuration error: No API key available',
-        message: 'Please configure your API key in the API Settings tab or contact administrator.'
+    // Check if user has provided an API key
+    if (!apiKeyToUse) {
+      console.error('❌ DIAGNOSTIC: No user API key found in session');
+      return res.status(401).json({
+        error: 'No API key provided',
+        message: 'Please configure your DeepSeek API key in the API Settings tab before using translation.'
       });
     }
 
-    console.log(`✅ DIAGNOSTIC: Using API key from: ${sessionApiKey ? 'session' : 'server environment'}`);
+    console.log(`✅ DIAGNOSTIC: Using user-provided API key from encrypted session`);
 
     // Model selection logic
     const modelMapping = {
@@ -305,21 +281,16 @@ export default async function handler(req, res) {
 
 Translate the following Chinese text to English:`;
 
-    // DIAGNOSTIC: OpenAI client creation
-    console.log('🤖 DIAGNOSTIC: OpenAI client creation');
+    // DIAGNOSTIC: OpenAI client creation with user API key
+    console.log('🤖 DIAGNOSTIC: Creating OpenAI client with user-provided API key');
     let clientToUse;
     try {
-      if (sessionApiKey) {
-        console.log('   - Creating new OpenAI client with session API key');
-        clientToUse = new OpenAI({
-          baseURL: 'https://api.deepseek.com',
-          apiKey: apiKeyToUse,
-        });
-      } else {
-        console.log('   - Using pre-initialized deepseek client');
-        clientToUse = deepseek;
-      }
-      console.log('✅ DIAGNOSTIC: OpenAI client created successfully');
+      console.log('   - Creating OpenAI client with user session API key');
+      clientToUse = new OpenAI({
+        baseURL: 'https://api.deepseek.com',
+        apiKey: apiKeyToUse,
+      });
+      console.log('✅ DIAGNOSTIC: OpenAI client created successfully with user API key');
     } catch (clientError) {
       console.error('❌ DIAGNOSTIC: OpenAI client creation failed:', clientError.message);
       throw new Error(`Failed to create OpenAI client: ${clientError.message}`);

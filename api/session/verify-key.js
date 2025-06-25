@@ -1,5 +1,4 @@
 // Vercel serverless function for verifying API keys in session
-require('dotenv').config();
 
 // Helper function to parse cookies from request headers
 const parseCookies = (req) => {
