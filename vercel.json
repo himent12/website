@@ -1,6 +1,6 @@
 {
   "functions": {
-    "pages/api/translate.js": {
+    "api/translate.js": {
       "maxDuration": 30
     }
   },
@@ -21,12 +21,6 @@
           "value": "Content-Type, Authorization"
         }
       ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/pages/api/$1"
     }
   ]
 }

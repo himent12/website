@@ -24,9 +24,8 @@ DEEPSEEK_API_KEY=sk-your_actual_deepseek_api_key_here
 ```
 
 ### Files Added for Vercel Compatibility
-- `pages/api/translate.js` - Serverless function for translation API
-- `vercel.json` - Vercel configuration with CORS and routing
-- `next.config.js` - Next.js configuration for API routes
+- `api/translate.js` - Serverless function for translation API
+- `vercel.json` - Vercel configuration with CORS headers
 
 ### Deployment Steps
 1. **Push to GitHub**:
