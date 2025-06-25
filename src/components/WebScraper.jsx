@@ -1,7 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saveTranslation } from '../utils/translationHistory';
 import { getUserApiKey, hasUserApiKey } from '../utils/userApiKeyManager';
+
+// Timer component to show elapsed translation time
+const TranslationTimer = ({ startTime }) => {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setElapsed(Date.now() - startTime);
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [startTime]);
+
+  return (
+    <span>
+      {(elapsed / 1000).toFixed(1)}s elapsed
+    </span>
+  );
+};
 
 const WebScraper = () => {
   const navigate = useNavigate();
@@ -11,6 +30,9 @@ const WebScraper = () => {
   const [isScrapingLoading, setIsScrapingLoading] = useState(false);
   const [isTranslatingLoading, setIsTranslatingLoading] = useState(false);
   const [error, setError] = useState('');
+  const [selectedModel, setSelectedModel] = useState('deepseek-chat');
+  const [translationStartTime, setTranslationStartTime] = useState(null);
+  const [translationDuration, setTranslationDuration] = useState(null);
 
   const handleScrape = async () => {
     if (!url.trim()) {
@@ -95,6 +117,8 @@ const WebScraper = () => {
 
     setIsTranslatingLoading(true);
     setError('');
+    setTranslationStartTime(Date.now());
+    setTranslationDuration(null);
     
     // Check if user has their own API key
     const userHasApiKey = hasUserApiKey('deepseek');
@@ -104,7 +128,8 @@ const WebScraper = () => {
       const requestBody = {
         text: scrapedData.content,
         from: 'zh',
-        to: 'en'
+        to: 'en',
+        model: selectedModel
       };
 
       // Add user API key if available
@@ -150,6 +175,10 @@ const WebScraper = () => {
       }
       const translated = data.translatedText || data.translation || '';
       
+      // Calculate translation duration
+      const duration = Date.now() - translationStartTime;
+      setTranslationDuration(duration);
+      
       setTranslatedText(translated);
 
       // Save to translation history if translation was successful
@@ -188,6 +217,8 @@ const WebScraper = () => {
     setScrapedData(null);
     setTranslatedText('');
     setError('');
+    setTranslationDuration(null);
+    setSelectedModel('deepseek-chat');
   };
 
   const handleCopyTranslation = async () => {
@@ -312,24 +343,68 @@ const WebScraper = () => {
                 <span className="hidden sm:inline">Scraped Content</span>
                 <span className="sm:hidden">Content</span>
               </h2>
-              <button
-                onClick={handleTranslate}
-                disabled={isTranslatingLoading || !scrapedData.content}
-                className="min-h-[44px] px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 
-                           text-white font-semibold rounded-lg
-                           transition-all duration-200 ease-in-out
-                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                           touch-manipulation text-sm sm:text-base"
-              >
-                {isTranslatingLoading ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Translating...
-                  </div>
-                ) : (
-                  'Translate'
-                )}
-              </button>
+            </div>
+
+            {/* Model Selection and Translation Controls */}
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Translation Model
+                  </label>
+                  <select
+                    value={selectedModel}
+                    onChange={(e) => setSelectedModel(e.target.value)}
+                    disabled={isTranslatingLoading}
+                    className="w-full min-h-[44px] px-3 py-2 border border-gray-300 rounded-lg
+                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                               disabled:bg-gray-100 disabled:cursor-not-allowed
+                               text-base touch-manipulation"
+                  >
+                    <option value="deepseek-chat">Chat Model (Faster)</option>
+                    <option value="deepseek-reasoner">Reasoner Model (More Thoughtful)</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {selectedModel === 'deepseek-chat'
+                      ? 'Quick and efficient translation'
+                      : 'Advanced reasoning for complex content'}
+                  </p>
+                </div>
+                
+                <div className="flex flex-col items-center">
+                  <button
+                    onClick={handleTranslate}
+                    disabled={isTranslatingLoading || !scrapedData.content}
+                    className="min-h-[44px] px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400
+                               text-white font-semibold rounded-lg
+                               transition-all duration-200 ease-in-out
+                               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                               touch-manipulation text-sm sm:text-base w-full sm:w-auto"
+                  >
+                    {isTranslatingLoading ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Translating...
+                      </div>
+                    ) : (
+                      'Translate'
+                    )}
+                  </button>
+                  
+                  {/* Translation Timer */}
+                  {isTranslatingLoading && translationStartTime && (
+                    <div className="mt-2 text-xs text-blue-600 font-medium">
+                      <TranslationTimer startTime={translationStartTime} />
+                    </div>
+                  )}
+                  
+                  {translationDuration && !isTranslatingLoading && (
+                    <div className="mt-2 text-xs text-green-600 font-medium">
+                      Completed in {(translationDuration / 1000).toFixed(1)}s
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-5 mb-4">
@@ -381,8 +456,12 @@ const WebScraper = () => {
                   {translatedText}
                 </p>
               </div>
-              <div className="mt-3 pt-3 border-t border-purple-200 text-xs sm:text-sm text-purple-600">
-                Translation completed • {translatedText.split(/\s+/).length} words
+              <div className="mt-3 pt-3 border-t border-purple-200 text-xs sm:text-sm text-purple-600 flex flex-wrap items-center gap-2">
+                <span>Translation completed • {translatedText.split(/\s+/).length} words</span>
+                {translationDuration && (
+                  <span>• {(translationDuration / 1000).toFixed(1)}s</span>
+                )}
+                <span>• Model: {selectedModel === 'deepseek-chat' ? 'Chat' : 'Reasoner'}</span>
               </div>
             </div>
           </div>
