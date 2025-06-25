@@ -33,12 +33,32 @@ const WebScraper = () => {
         body: JSON.stringify({ url: url.trim() }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Scraping failed: ${response.status}`);
+      // Get response text first to avoid double JSON parsing
+      const responseText = await response.text();
+
+      // Check if response is empty
+      if (!responseText || responseText.trim().length === 0) {
+        throw new Error('Empty response from server');
       }
 
-      const data = await response.json();
+      // Parse JSON once
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (jsonError) {
+        console.error('JSON parsing failed. Raw response:', responseText.substring(0, 200));
+        throw new Error('Invalid JSON response from server');
+      }
+
+      if (!response.ok) {
+        throw new Error(data.message || data.error || `Scraping failed: ${response.status}`);
+      }
+
+      // Validate response structure
+      if (!data.success || !data.data) {
+        throw new Error('Invalid response structure from server');
+      }
+
       setScrapedData(data.data);
     } catch (err) {
       setError(`Scraping error: ${err.message}`);

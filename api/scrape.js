@@ -268,27 +268,29 @@ const extractContent = (html, url) => {
 };
 
 export default async function handler(req, res) {
-  // Set proper response headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Content-Type', 'application/json');
+  // Wrap entire function in try-catch to ensure we always return JSON
+  try {
+    // Set proper response headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Content-Type', 'application/json');
 
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
 
-  // Allow both GET and POST requests
-  if (!['GET', 'POST'].includes(req.method)) {
-    return res.status(405).json({
-      error: 'Method not allowed',
-      message: 'Only GET and POST requests are allowed for this endpoint'
-    });
-  }
+    // Allow both GET and POST requests
+    if (!['GET', 'POST'].includes(req.method)) {
+      return res.status(405).json({
+        error: 'Method not allowed',
+        message: 'Only GET and POST requests are allowed for this endpoint'
+      });
+    }
 
-  // Extract URL from query parameters or request body
-  const url = req.method === 'GET' ? req.query.url : req.body?.url;
+    // Extract URL from query parameters or request body
+    const url = req.method === 'GET' ? req.query.url : req.body?.url;
 
   try {
     console.log(`Scraping request for URL: ${url}`);
@@ -466,5 +468,34 @@ export default async function handler(req, res) {
       message: 'Unable to scrape the webpage. Please try again later.',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
+  }
+
+  } catch (criticalError) {
+    // Critical error handler - ensure we always return JSON
+    console.error('Critical error in scraper handler:', criticalError);
+
+    // Ensure JSON headers are set
+    try {
+      res.setHeader('Content-Type', 'application/json');
+    } catch (headerError) {
+      console.error('Failed to set headers:', headerError);
+    }
+
+    // Return a safe JSON error response
+    try {
+      return res.status(500).json({
+        error: 'Internal server error',
+        message: 'An unexpected error occurred. Please try again later.',
+        details: process.env.NODE_ENV === 'development' ? criticalError.message : undefined
+      });
+    } catch (responseError) {
+      console.error('Failed to send error response:', responseError);
+      // Last resort - try to send plain text
+      try {
+        res.status(500).send('{"error":"Internal server error","message":"An unexpected error occurred"}');
+      } catch (finalError) {
+        console.error('Complete failure to respond:', finalError);
+      }
+    }
   }
 }
