@@ -268,10 +268,11 @@ const extractContent = (html, url) => {
 };
 
 export default async function handler(req, res) {
-  // Set CORS headers
+  // Set proper response headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Content-Type', 'application/json');
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
@@ -411,7 +412,17 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('Scraping error:', error);
+    console.error('Scraping error details:', {
+      message: error.message,
+      code: error.code,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      url: url,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+
+    // Ensure we always return JSON
+    res.setHeader('Content-Type', 'application/json');
 
     // Handle different types of errors
     if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
