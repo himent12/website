@@ -23,37 +23,30 @@ const TextTranslator = () => {
     const userHasApiKey = hasUserApiKey('deepseek');
 
     try {
-      let response;
+      // Prepare request payload
+      const requestBody = {
+        text: inputText.trim(),
+        from: 'zh',
+        to: 'en'
+      };
 
+      // Add user API key if available
       if (userHasApiKey) {
-        // Send user's API key to server for secure processing
         const apiKey = getUserApiKey('deepseek');
-        response = await fetch('/api/translate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            text: inputText,
-            from: 'zh',
-            to: 'en',
-            userApiKey: apiKey // Send securely to server
-          }),
-        });
-      } else {
-        // Use server's default API key
-        response = await fetch('/api/translate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            text: inputText,
-            from: 'zh',
-            to: 'en'
-          }),
-        });
+        if (apiKey) {
+          requestBody.userApiKey = apiKey;
+        }
       }
+
+      // Make API request with optimized headers
+      const response = await fetch('/api/translate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
 
       if (!response.ok) {
         throw new Error(`Translation failed: ${response.status}`);
