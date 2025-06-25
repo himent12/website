@@ -5,6 +5,18 @@
     },
     "api/scrape.js": {
       "maxDuration": 60
+    },
+    "api/session/store-key.js": {
+      "maxDuration": 10
+    },
+    "api/session/verify-key.js": {
+      "maxDuration": 10
+    },
+    "api/session/clear-key.js": {
+      "maxDuration": 10
+    },
+    "api/health.js": {
+      "maxDuration": 5
     }
   },
   "headers": [
