@@ -158,28 +158,42 @@ const ApiKeySettings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          {/* Mobile-Optimized Header */}
-          <div className="px-4 sm:px-6 py-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-800">API Key Management</h2>
-                <p className="text-sm sm:text-base text-gray-600 mt-1">
-                  Secure server-side session management for your API keys
-                </p>
-              </div>
-              <div className="flex items-center space-x-2 sm:space-x-3">
-                <div className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full ${
-                  !serverConnected ? 'bg-red-500' : keyMetadata ? 'bg-green-500' : 'bg-gray-300'
-                }`}></div>
-                <span className="text-sm sm:text-base text-gray-600 font-medium">
-                  {!serverConnected ? 'Server Disconnected' : keyMetadata ? 'API Key Active' : 'No API Key'}
-                </span>
-              </div>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      {/* Enhanced Mobile-First Header */}
+      <div className="text-center mobile-container mobile-safe-top py-8 sm:py-12 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-100/20 via-indigo-100/20 to-purple-100/20"></div>
+        <div className="absolute top-0 left-1/4 w-32 h-32 bg-blue-200/30 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-1/4 w-40 h-40 bg-indigo-200/30 rounded-full blur-3xl"></div>
+        
+        <div className="relative z-10 animate-fadeIn">
+          <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl mb-4 shadow-lg">
+            <svg className="w-8 h-8 sm:w-10 sm:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1721 9z" />
+            </svg>
           </div>
+          <h1 className="text-mobile-xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-3 leading-tight">
+            API Key Management
+          </h1>
+          <p className="text-mobile-base sm:text-lg text-gray-600 mb-4">
+            Secure server-side session management for your API keys
+          </p>
+          <div className="w-20 sm:w-28 h-1.5 bg-gradient-to-r from-blue-500 to-indigo-600 mx-auto rounded-full shadow-sm"></div>
+          
+          {/* Status Indicator */}
+          <div className="mt-6 inline-flex items-center space-x-3 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full border border-gray-200">
+            <div className={`w-3 h-3 rounded-full animate-pulse-slow ${
+              !serverConnected ? 'bg-red-500' : keyMetadata ? 'bg-green-500' : 'bg-gray-400'
+            }`}></div>
+            <span className="text-sm font-medium text-gray-700">
+              {!serverConnected ? 'Server Disconnected' : keyMetadata ? 'API Key Active' : 'No API Key'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mobile-container max-w-4xl mx-auto -mt-4 relative z-10">
+        <div className="mobile-card overflow-hidden animate-slideInUp">
 
           {/* Mobile-Optimized DeepSeek API Key Section */}
           <div className="p-4 sm:p-6">

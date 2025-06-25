@@ -246,222 +246,305 @@ const WebScraper = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Mobile-Optimized Header */}
-      <div className="text-center px-4 py-6 sm:py-8 bg-gradient-to-r from-green-50 to-blue-50">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-2">
-          Web Scraper & Translator
-        </h1>
-        <p className="text-base sm:text-lg text-gray-600">
-          Extract and Translate Web Content
-        </p>
-        <div className="w-16 sm:w-24 h-1 bg-green-500 mx-auto mt-3 sm:mt-4 rounded-full"></div>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
+      {/* Enhanced Mobile-First Header */}
+      <div className="text-center mobile-container mobile-safe-top py-8 sm:py-12 bg-gradient-to-r from-green-50 via-emerald-50 to-blue-50 relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute inset-0 bg-gradient-to-r from-green-100/20 via-emerald-100/20 to-blue-100/20"></div>
+        <div className="absolute top-0 left-1/4 w-32 h-32 bg-green-200/30 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-1/4 w-40 h-40 bg-blue-200/30 rounded-full blur-3xl"></div>
+        
+        <div className="relative z-10 animate-fadeIn">
+          <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-green-500 to-blue-600 rounded-2xl mb-4 shadow-lg">
+            <svg className="w-8 h-8 sm:w-10 sm:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+            </svg>
+          </div>
+          <h1 className="text-mobile-xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-3 leading-tight">
+            Web Scraper & Translator
+          </h1>
+          <p className="text-mobile-base sm:text-lg text-gray-600 mb-4">
+            Extract and Translate Web Content
+          </p>
+          <div className="w-20 sm:w-28 h-1.5 bg-gradient-to-r from-green-500 to-blue-600 mx-auto rounded-full shadow-sm"></div>
+        </div>
       </div>
 
-      {/* Mobile-First Interface */}
-      <div className="px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+      {/* Enhanced Mobile-First Interface */}
+      <div className="mobile-container max-w-6xl mx-auto -mt-4 relative z-10">
 
-        {/* URL Input Section */}
-        <div className="mb-6 lg:mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-700 flex items-center">
-              <span className="w-6 h-6 sm:w-7 sm:h-7 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-2 sm:mr-3">
-                🌐
-              </span>
-              <span className="hidden sm:inline">Website URL</span>
-              <span className="sm:hidden">URL</span>
-            </h2>
-            <button
-              onClick={handleClear}
-              className="min-h-[44px] px-3 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors touch-manipulation"
-            >
-              Clear
-            </button>
-          </div>
+        {/* Enhanced URL Input Section */}
+        <div className="mb-8 animate-slideInUp">
+          <div className="mobile-card p-6 sm:p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-mobile-lg sm:text-xl font-bold text-gray-800 flex items-center">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center text-white text-sm font-bold mr-3 shadow-lg">
+                  🌐
+                </div>
+                <span className="hidden sm:inline">Website URL</span>
+                <span className="sm:hidden">URL</span>
+              </h2>
+              <button
+                onClick={handleClear}
+                className="min-h-[48px] px-4 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all duration-200 touch-manipulation flex items-center space-x-2 hover:scale-105"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                <span>Clear</span>
+              </button>
+            </div>
 
-          <div className="relative mb-4">
-            <input
-              type="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="Enter URL (e.g., https://www.69shuba.com/...)"
-              className="w-full p-4 sm:p-5
-                         border-2 border-gray-200 rounded-xl
-                         focus:border-green-500 focus:ring-2 focus:ring-green-200
-                         focus:outline-none transition-all duration-200
-                         text-base sm:text-lg
-                         touch-manipulation"
-              disabled={isScrapingLoading}
-              style={{ fontSize: '16px' }} // Prevent zoom on iOS
-            />
-          </div>
-
-          <button
-            onClick={handleScrape}
-            disabled={isScrapingLoading || !url.trim()}
-            className="w-full min-h-[44px] bg-green-600 hover:bg-green-700 disabled:bg-gray-400 
-                       text-white font-semibold py-3 px-6 rounded-xl
-                       transition-all duration-200 ease-in-out
-                       focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2
-                       touch-manipulation text-base sm:text-lg"
-          >
-            {isScrapingLoading ? (
-              <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                Scraping...
+            <div className="space-y-4">
+              <div className="relative">
+                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                </div>
+                <input
+                  type="url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="Enter URL (e.g., https://www.69shuba.com/...)"
+                  className="mobile-input w-full pl-12 pr-4 py-4 text-mobile-base"
+                  disabled={isScrapingLoading}
+                  style={{ fontSize: '16px' }} // Prevent zoom on iOS
+                />
               </div>
-            ) : (
-              'Scrape Content'
-            )}
-          </button>
+
+              <button
+                onClick={handleScrape}
+                disabled={isScrapingLoading || !url.trim()}
+                className="mobile-button-primary w-full min-h-[56px] text-mobile-lg font-bold
+                           disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
+                           relative overflow-hidden group"
+              >
+                {/* Button background animation */}
+                <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-emerald-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                
+                <div className="relative z-10 flex items-center justify-center space-x-3">
+                  {isScrapingLoading ? (
+                    <>
+                      <div className="relative">
+                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-white/30"></div>
+                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent absolute top-0 left-0"></div>
+                      </div>
+                      <span>Scraping Content...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-6 h-6 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                      </svg>
+                      <span>Scrape Content</span>
+                    </>
+                  )}
+                </div>
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Error Display */}
+        {/* Enhanced Error Display */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-800">{error}</p>
+          <div className="mb-8 animate-slideInUp">
+            <div className="mobile-card p-6 bg-gradient-to-r from-red-50 to-pink-50 border-red-200">
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0 w-8 h-8 bg-red-100 rounded-xl flex items-center justify-center">
+                  <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-red-800 font-semibold mb-1">Scraping Error</h3>
+                  <p className="text-red-700 text-mobile-base leading-relaxed">{error}</p>
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Scraped Content Display */}
+        {/* Enhanced Scraped Content Display */}
         {scrapedData && (
-          <div className="mb-6 lg:mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-700 flex items-center">
-                <span className="w-6 h-6 sm:w-7 sm:h-7 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-2 sm:mr-3">
-                  📄
-                </span>
-                <span className="hidden sm:inline">Scraped Content</span>
-                <span className="sm:hidden">Content</span>
-              </h2>
-            </div>
+          <div className="mb-8 animate-slideInUp" style={{ animationDelay: '0.1s' }}>
+            <div className="mobile-card p-6 sm:p-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-mobile-lg sm:text-xl font-bold text-gray-800 flex items-center">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white text-sm font-bold mr-3 shadow-lg">
+                    📄
+                  </div>
+                  <span className="hidden sm:inline">Scraped Content</span>
+                  <span className="sm:hidden">Content</span>
+                </h2>
+              </div>
 
-            {/* Model Selection and Translation Controls */}
-            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Translation Model
-                  </label>
-                  <select
-                    value={selectedModel}
-                    onChange={(e) => setSelectedModel(e.target.value)}
-                    disabled={isTranslatingLoading}
-                    className="w-full min-h-[44px] px-3 py-2 border border-gray-300 rounded-lg
-                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                               disabled:bg-gray-100 disabled:cursor-not-allowed
-                               text-base touch-manipulation"
-                  >
-                    <option value="deepseek-chat">Chat Model (Faster)</option>
-                    <option value="deepseek-reasoner">Reasoner Model (More Thoughtful)</option>
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {selectedModel === 'deepseek-chat'
-                      ? 'Quick and efficient translation'
-                      : 'Advanced reasoning for complex content'}
+              {/* Enhanced Model Selection and Translation Controls */}
+              <div className="mb-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+                <div className="flex flex-col space-y-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-mobile-base font-bold text-gray-800">Translation Model</h3>
+                      <p className="text-sm text-gray-600">Choose the best model for your content</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+                    <div className="flex-1 space-y-2">
+                      <select
+                        value={selectedModel}
+                        onChange={(e) => setSelectedModel(e.target.value)}
+                        disabled={isTranslatingLoading}
+                        className="mobile-input w-full min-h-[52px] px-4 py-3 text-mobile-base font-medium
+                                   disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <option value="deepseek-chat">⚡ Chat Model - Fast & Efficient</option>
+                        <option value="deepseek-reasoner">🧠 Reasoner Model - Advanced Reasoning</option>
+                      </select>
+                      <p className="text-xs text-gray-500">
+                        {selectedModel === 'deepseek-chat'
+                          ? 'Quick and efficient translation for general content'
+                          : 'Advanced reasoning for complex and nuanced content'}
+                      </p>
+                    </div>
+                    
+                    <div className="flex flex-col items-center space-y-2">
+                      <button
+                        onClick={handleTranslate}
+                        disabled={isTranslatingLoading || !scrapedData.content}
+                        className="mobile-button-primary min-h-[52px] px-8 py-3 text-mobile-base font-bold
+                                   disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
+                                   relative overflow-hidden group w-full sm:w-auto"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        
+                        <div className="relative z-10 flex items-center justify-center space-x-2">
+                          {isTranslatingLoading ? (
+                            <>
+                              <div className="relative">
+                                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/30"></div>
+                                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent absolute top-0 left-0"></div>
+                              </div>
+                              <span>Translating...</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                              </svg>
+                              <span>Translate</span>
+                            </>
+                          )}
+                        </div>
+                      </button>
+                      
+                      {/* Enhanced Translation Timer */}
+                      {isTranslatingLoading && translationStartTime && (
+                        <div className="text-xs text-blue-600 font-semibold bg-blue-100 px-3 py-1 rounded-full animate-pulse-slow">
+                          <TranslationTimer startTime={translationStartTime} />
+                        </div>
+                      )}
+                      
+                      {translationDuration && !isTranslatingLoading && (
+                        <div className="text-xs text-green-600 font-semibold bg-green-100 px-3 py-1 rounded-full">
+                          ✓ Completed in {(translationDuration / 1000).toFixed(1)}s
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Enhanced Content Display */}
+              <div className="bg-gradient-to-r from-gray-50 to-blue-50/30 border border-gray-200 rounded-xl p-6 mb-4">
+                <div className="flex items-start space-x-4 mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-gray-800 mb-2 text-mobile-base sm:text-lg line-clamp-2">
+                      {scrapedData.title}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 mb-3">
+                      <span className="bg-white px-2 py-1 rounded-lg">📍 {new URL(scrapedData.url).hostname}</span>
+                      <span className="bg-white px-2 py-1 rounded-lg">📊 {scrapedData.wordCount} words</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="max-h-72 overflow-y-auto mobile-scroll bg-white rounded-lg p-4 border">
+                  <p className="text-mobile-base text-gray-700 leading-relaxed whitespace-pre-wrap">
+                    {scrapedData.content}
                   </p>
                 </div>
-                
-                <div className="flex flex-col items-center">
-                  <button
-                    onClick={handleTranslate}
-                    disabled={isTranslatingLoading || !scrapedData.content}
-                    className="min-h-[44px] px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400
-                               text-white font-semibold rounded-lg
-                               transition-all duration-200 ease-in-out
-                               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                               touch-manipulation text-sm sm:text-base w-full sm:w-auto"
-                  >
-                    {isTranslatingLoading ? (
-                      <div className="flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Translating...
-                      </div>
-                    ) : (
-                      'Translate'
-                    )}
-                  </button>
-                  
-                  {/* Translation Timer */}
-                  {isTranslatingLoading && translationStartTime && (
-                    <div className="mt-2 text-xs text-blue-600 font-medium">
-                      <TranslationTimer startTime={translationStartTime} />
-                    </div>
-                  )}
-                  
-                  {translationDuration && !isTranslatingLoading && (
-                    <div className="mt-2 text-xs text-green-600 font-medium">
-                      Completed in {(translationDuration / 1000).toFixed(1)}s
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-5 mb-4">
-              <h3 className="font-semibold text-gray-800 mb-2 text-base sm:text-lg">
-                {scrapedData.title}
-              </h3>
-              <p className="text-xs sm:text-sm text-gray-500 mb-3">
-                Source: {scrapedData.url} • {scrapedData.wordCount} words
-              </p>
-              <div className="max-h-64 overflow-y-auto">
-                <p className="text-sm sm:text-base text-gray-700 leading-relaxed whitespace-pre-wrap">
-                  {scrapedData.content}
-                </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Translation Output */}
+        {/* Enhanced Translation Output */}
         {translatedText && (
-          <div className="mb-6 lg:mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-700 flex items-center">
-                <span className="w-6 h-6 sm:w-7 sm:h-7 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-2 sm:mr-3">
-                  EN
-                </span>
-                <span className="hidden sm:inline">English Translation</span>
-                <span className="sm:hidden">Translation</span>
-              </h2>
-              <div className="flex space-x-2">
-                <button
-                  onClick={handleCopyTranslation}
-                  className="min-h-[44px] px-3 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors touch-manipulation"
-                >
-                  Copy
-                </button>
-                <button
-                  onClick={handleOpenReadingMode}
-                  className="min-h-[44px] px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg transition-colors touch-manipulation"
-                >
-                  Reading Mode
-                </button>
+          <div className="mb-8 animate-slideInUp" style={{ animationDelay: '0.2s' }}>
+            <div className="mobile-card p-6 sm:p-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-mobile-lg sm:text-xl font-bold text-gray-800 flex items-center">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center text-white text-sm font-bold mr-3 shadow-lg">
+                    EN
+                  </div>
+                  <span className="hidden sm:inline">English Translation</span>
+                  <span className="sm:hidden">Translation</span>
+                </h2>
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <button
+                    onClick={handleCopyTranslation}
+                    className="min-h-[48px] px-4 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all duration-200 flex items-center space-x-2 touch-manipulation hover:scale-105"
+                  >
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <span className="hidden sm:inline">Copy</span>
+                  </button>
+                  <button
+                    onClick={handleOpenReadingMode}
+                    className="min-h-[48px] px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white text-sm font-semibold rounded-xl transition-all duration-200 flex items-center space-x-2 touch-manipulation hover:scale-105 shadow-lg"
+                  >
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    <span className="hidden sm:inline">Reading Mode</span>
+                    <span className="sm:hidden">Read</span>
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 sm:p-5">
-              <div className="max-h-96 overflow-y-auto">
-                <p className="text-sm sm:text-base text-gray-800 leading-relaxed whitespace-pre-wrap">
-                  {translatedText}
-                </p>
-              </div>
-              <div className="mt-3 pt-3 border-t border-purple-200 text-xs sm:text-sm text-purple-600 flex flex-wrap items-center gap-2">
-                <span>Translation completed • {translatedText.split(/\s+/).length} words</span>
-                {translationDuration && (
-                  <span>• {(translationDuration / 1000).toFixed(1)}s</span>
-                )}
-                <span>• Model: {selectedModel === 'deepseek-chat' ? 'Chat' : 'Reasoner'}</span>
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
+                <div className="max-h-96 overflow-y-auto mobile-scroll bg-white rounded-lg p-4 mb-4 border">
+                  <p className="text-mobile-base text-gray-800 leading-relaxed whitespace-pre-wrap">
+                    {translatedText}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-purple-600 font-medium">
+                  <div className="flex items-center space-x-1">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span>Translation completed</span>
+                  </div>
+                  <span>•</span>
+                  <span>{translatedText.split(/\s+/).length} words</span>
+                  {translationDuration && (
+                    <>
+                      <span>•</span>
+                      <span>{(translationDuration / 1000).toFixed(1)}s</span>
+                    </>
+                  )}
+                  <span>•</span>
+                  <span>Model: {selectedModel === 'deepseek-chat' ? 'Chat' : 'Reasoner'}</span>
+                </div>
               </div>
             </div>
           </div>
