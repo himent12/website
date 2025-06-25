@@ -1,7 +1,7 @@
 {
   "functions": {
     "api/translate.js": {
-      "maxDuration": 120
+      "maxDuration": 240
     },
     "api/scrape.js": {
       "maxDuration": 60
