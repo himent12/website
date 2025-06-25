@@ -1,5 +1,5 @@
 {
-  "proxy": "http://localhost:5000",
+  "proxy": "http://localhost:3001",
   "name": "website",
   "version": "0.1.0",
   "private": true,
@@ -8,6 +8,8 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
+    "@vercel/blob": "^1.1.1",
+    "@vercel/edge-config": "^1.4.0",
     "@vercel/speed-insights": "^1.2.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
@@ -25,7 +27,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "server": "node server/index.js",
-    "dev": "concurrently \"npm run server\" \"npm run start\""
+    "dev": "concurrently \"npm run server\" \"cross-env PORT=3000 npm run start\""
   },
   "eslintConfig": {
     "extends": [
@@ -48,6 +50,7 @@
   "devDependencies": {
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.2.0",
+    "cross-env": "^7.0.3",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17"
   }

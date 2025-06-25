@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saveTranslation } from '../utils/translationHistory';
+import { getUserApiKey, hasUserApiKey } from '../utils/userApiKeyManager';
 
 const TextTranslator = () => {
   const navigate = useNavigate();
@@ -16,21 +17,43 @@ const TextTranslator = () => {
     }
 
     setIsLoading(true);
-    setError('');
-    setOutputText('');
+    setError(null);
+    
+    // Check if user has their own API key
+    const userHasApiKey = hasUserApiKey('deepseek');
 
     try {
-      const response = await fetch('/api/translate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: inputText,
-          from: 'zh',
-          to: 'en'
-        }),
-      });
+      let response;
+
+      if (userHasApiKey) {
+        // Send user's API key to server for secure processing
+        const apiKey = getUserApiKey('deepseek');
+        response = await fetch('/api/translate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: inputText,
+            from: 'zh',
+            to: 'en',
+            userApiKey: apiKey // Send securely to server
+          }),
+        });
+      } else {
+        // Use server's default API key
+        response = await fetch('/api/translate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: inputText,
+            from: 'zh',
+            to: 'en'
+          }),
+        });
+      }
 
       if (!response.ok) {
         throw new Error(`Translation failed: ${response.status}`);
@@ -38,6 +61,7 @@ const TextTranslator = () => {
 
       const data = await response.json();
       const translatedText = data.translatedText || data.translation || '';
+      
       setOutputText(translatedText);
 
       // Save to translation history if translation was successful
@@ -227,3 +251,4 @@ const TextTranslator = () => {
 };
 
 export default TextTranslator;
+

@@ -4,7 +4,7 @@ const cors = require('cors');
 const OpenAI = require('openai');
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 3001;
 
 // Initialize DeepSeek client using OpenAI SDK
 const deepseek = new OpenAI({
@@ -63,16 +63,27 @@ app.get('/api', (req, res) => {
 
 // Translation endpoint
 app.post('/api/translate', validateTranslationRequest, async (req, res) => {
-  const { text, from, to } = req.body;
+  const { text, from, to, userApiKey } = req.body;
 
   try {
-    console.log(`Translation request: ${from} -> ${to}, text length: ${text.length}`);
+    console.log(`Translation request: ${from} -> ${to}, text length: ${text.length}, using user key: ${!!userApiKey}`);
 
-    // Check if API key is configured
-    if (!process.env.DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY === 'your_api_key_here') {
+    // Determine which API key to use
+    let apiKeyToUse = userApiKey || process.env.DEEPSEEK_API_KEY;
+
+    // Check if any API key is available
+    if (!apiKeyToUse || apiKeyToUse === 'your_api_key_here') {
       return res.status(500).json({
-        error: 'API configuration error: DeepSeek API key not configured',
-        message: 'Translation service temporarily unavailable. Please contact administrator.'
+        error: 'API configuration error: No API key available',
+        message: 'Please configure your API key in the API Settings tab or contact administrator.'
+      });
+    }
+
+    // Validate user-provided API key format (basic validation)
+    if (userApiKey && !userApiKey.startsWith('sk-')) {
+      return res.status(400).json({
+        error: 'Invalid API key format',
+        message: 'DeepSeek API keys must start with "sk-". Please check your API key in the API Settings tab.'
       });
     }
 
@@ -87,8 +98,16 @@ app.post('/api/translate', validateTranslationRequest, async (req, res) => {
 
 Translate the following Chinese text to English:`;
 
+    // Create DeepSeek client with the appropriate API key
+    const clientToUse = userApiKey ?
+      new OpenAI({
+        baseURL: 'https://api.deepseek.com',
+        apiKey: apiKeyToUse,
+      }) :
+      deepseek; // Use the default client
+
     // Make API call to DeepSeek
-    const completion = await deepseek.chat.completions.create({
+    const completion = await clientToUse.chat.completions.create({
       model: 'deepseek-chat',
       messages: [
         {
