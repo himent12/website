@@ -2,6 +2,9 @@
   "functions": {
     "api/translate.js": {
       "maxDuration": 30
+    },
+    "api/scrape.js": {
+      "maxDuration": 60
     }
   },
   "headers": [
