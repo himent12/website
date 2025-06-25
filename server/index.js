@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const OpenAI = require('openai');
+const axios = require('axios');
+const cheerio = require('cheerio');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -67,13 +69,133 @@ const validateTranslationRequest = (req, res, next) => {
   next();
 };
 
+// URL validation helper for scraper
+const validateUrl = (url) => {
+  if (!url || typeof url !== 'string' || url.trim().length === 0) {
+    return {
+      valid: false,
+      error: 'Invalid input: URL is required and cannot be empty',
+      message: '请输入有效的URL (Please enter a valid URL)'
+    };
+  }
+
+  try {
+    const urlObj = new URL(url.trim());
+
+    // Only allow HTTP and HTTPS protocols
+    if (!['http:', 'https:'].includes(urlObj.protocol)) {
+      return {
+        valid: false,
+        error: 'Invalid protocol: Only HTTP and HTTPS URLs are allowed',
+        message: '仅支持HTTP和HTTPS协议 (Only HTTP and HTTPS protocols are supported)'
+      };
+    }
+
+    return { valid: true, url: url.trim() };
+  } catch (error) {
+    return {
+      valid: false,
+      error: 'Invalid URL format',
+      message: 'URL格式无效 (Invalid URL format)'
+    };
+  }
+};
+
+// Extract content from HTML using cheerio
+const extractContent = (html, url) => {
+  const $ = cheerio.load(html);
+
+  // Remove script and style elements
+  $('script, style, nav, header, footer, aside, .advertisement, .ads, .sidebar').remove();
+
+  // Try to extract title
+  let title = $('title').text().trim() ||
+              $('h1').first().text().trim() ||
+              'Scraped Content';
+
+  // Clean up title
+  title = title.replace(/\s+/g, ' ').trim();
+
+  // Try different content selectors based on common patterns
+  let content = '';
+
+  // For 69shuba and similar novel sites
+  const novelSelectors = [
+    '#content',
+    '.content',
+    '#chapter_content',
+    '.chapter-content',
+    '.novel-content',
+    '.text-content',
+    '.main-text',
+    'div[id*="content"]',
+    'div[class*="content"]'
+  ];
+
+  // Try novel-specific selectors first
+  for (const selector of novelSelectors) {
+    const element = $(selector);
+    if (element.length > 0) {
+      content = element.text().trim();
+      if (content.length > 100) { // Only use if substantial content
+        break;
+      }
+    }
+  }
+
+  // Fallback to general content extraction
+  if (!content || content.length < 100) {
+    // Try main content areas
+    const fallbackSelectors = [
+      'main',
+      'article',
+      '.main',
+      '#main',
+      '.post-content',
+      '.entry-content',
+      '.page-content'
+    ];
+
+    for (const selector of fallbackSelectors) {
+      const element = $(selector);
+      if (element.length > 0) {
+        content = element.text().trim();
+        if (content.length > 100) {
+          break;
+        }
+      }
+    }
+  }
+
+  // Last resort: get all paragraph text
+  if (!content || content.length < 100) {
+    const paragraphs = $('p').map((i, el) => $(el).text().trim()).get();
+    content = paragraphs.join('\n\n').trim();
+  }
+
+  // Clean up content
+  content = content
+    .replace(/\s+/g, ' ')
+    .replace(/\n\s*\n/g, '\n\n')
+    .trim();
+
+  return {
+    title,
+    content,
+    url,
+    wordCount: content.split(/\s+/).length,
+    extractedAt: new Date().toISOString()
+  };
+};
+
 // Routes
 app.get('/api', (req, res) => {
   res.json({
     message: 'Chinese-English Translation API Server',
     status: 'running',
     endpoints: {
-      translate: 'POST /api/translate'
+      translate: 'POST /api/translate',
+      scrape: 'POST /api/scrape'
     }
   });
 });
@@ -193,6 +315,115 @@ Translate the following Chinese text to English:`;
     res.status(500).json({
       error: 'Translation service error',
       message: 'Unable to complete translation. Please try again later.',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Web scraper endpoint
+app.post('/api/scrape', async (req, res) => {
+  const { url } = req.body;
+
+  try {
+    console.log(`Scraping request for URL: ${url}`);
+
+    // Validate URL
+    const validation = validateUrl(url);
+    if (!validation.valid) {
+      return res.status(400).json({
+        error: validation.error,
+        message: validation.message
+      });
+    }
+
+    // Configure axios with appropriate headers and timeout
+    const axiosConfig = {
+      timeout: 30000, // 30 second timeout
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+      },
+      maxRedirects: 5,
+      validateStatus: function (status) {
+        return status >= 200 && status < 400; // Accept 2xx and 3xx status codes
+      }
+    };
+
+    // Fetch the webpage
+    const response = await axios.get(validation.url, axiosConfig);
+
+    if (!response.data) {
+      throw new Error('Empty response from server');
+    }
+
+    // Extract content from HTML
+    const extractedData = extractContent(response.data, validation.url);
+
+    if (!extractedData.content || extractedData.content.length < 50) {
+      return res.status(422).json({
+        error: 'Content extraction failed',
+        message: 'Unable to extract meaningful content from the webpage. The page might be protected or have a complex structure.',
+        details: {
+          title: extractedData.title,
+          contentLength: extractedData.content.length
+        }
+      });
+    }
+
+    console.log(`Scraping completed successfully. Title: "${extractedData.title}", Content length: ${extractedData.content.length}`);
+
+    return res.status(200).json({
+      success: true,
+      data: extractedData
+    });
+
+  } catch (error) {
+    console.error('Scraping error:', error);
+
+    // Handle different types of errors
+    if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+      return res.status(404).json({
+        error: 'Website not found',
+        message: 'Unable to connect to the specified website. Please check the URL and try again.'
+      });
+    }
+
+    if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+      return res.status(408).json({
+        error: 'Request timeout',
+        message: 'The website took too long to respond. Please try again later.'
+      });
+    }
+
+    if (error.response?.status === 403) {
+      return res.status(403).json({
+        error: 'Access forbidden',
+        message: 'The website has blocked access to this content. This might be due to anti-scraping measures.'
+      });
+    }
+
+    if (error.response?.status === 404) {
+      return res.status(404).json({
+        error: 'Page not found',
+        message: 'The requested page could not be found. Please check the URL and try again.'
+      });
+    }
+
+    if (error.response?.status >= 500) {
+      return res.status(502).json({
+        error: 'Server error',
+        message: 'The target website is experiencing server issues. Please try again later.'
+      });
+    }
+
+    // Generic error response
+    return res.status(500).json({
+      error: 'Scraping service error',
+      message: 'Unable to scrape the webpage. Please try again later.',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
