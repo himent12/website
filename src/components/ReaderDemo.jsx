@@ -42,14 +42,22 @@ And so the story continues, with each translated word adding another thread to t
           Enhanced Reader Demo
         </h1>
         <p className="text-lg text-gray-600 mb-8">
-          Experience the sophisticated webnovel-style reading interface with customizable themes, 
-          typography settings, bookmarks, and markdown formatting.
+          Experience the sophisticated dual-mode reading interface with scroll and page modes,
+          customizable themes, typography settings, bookmarks, and markdown formatting.
         </p>
         
         <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">Features Include:</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
             <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                <span>Dual-mode reading (Scroll & Page)</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                <span>Touch gestures & keyboard navigation</span>
+              </div>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                 <span>Day/Night/Sepia reading modes</span>
@@ -62,15 +70,15 @@ And so the story continues, with each translated word adding another thread to t
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                 <span>Adjustable line height & width</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span>Bookmark functionality</span>
-              </div>
             </div>
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                <span>Seamless mode switching</span>
+              </div>
+              <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>Progress tracking</span>
+                <span>Progress tracking & bookmarks</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
