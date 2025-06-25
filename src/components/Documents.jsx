@@ -175,7 +175,7 @@ const Documents = () => {
                 <div className="space-y-2">
                   <div className="flex items-center">
                     <span className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold mr-2">
-                      中
+                      ZH
                     </span>
                     <span className="text-sm font-medium text-gray-700">Chinese</span>
                   </div>

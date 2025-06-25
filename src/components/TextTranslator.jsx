@@ -12,7 +12,7 @@ const TextTranslator = () => {
 
   const handleTranslate = async () => {
     if (!inputText.trim()) {
-      setError('请输入要翻译的中文文本 (Please enter Chinese text to translate)');
+      setError('Please enter Chinese text to translate');
       return;
     }
 
@@ -102,10 +102,10 @@ const TextTranslator = () => {
       {/* Mobile-Optimized Header */}
       <div className="text-center px-4 py-6 sm:py-8 bg-gradient-to-r from-blue-50 to-indigo-50">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-2">
-          中英翻译器
+          Chinese to English Translator
         </h1>
         <p className="text-base sm:text-lg text-gray-600">
-          Chinese to English Translator
+          AI-Powered Translation Service
         </p>
         <div className="w-16 sm:w-24 h-1 bg-blue-500 mx-auto mt-3 sm:mt-4 rounded-full"></div>
       </div>
@@ -118,17 +118,17 @@ const TextTranslator = () => {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg sm:text-xl font-semibold text-gray-700 flex items-center">
               <span className="w-6 h-6 sm:w-7 sm:h-7 bg-red-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-2 sm:mr-3">
-                中
+                ZH
               </span>
-              <span className="hidden sm:inline">简体中文 (Simplified Chinese)</span>
-              <span className="sm:hidden">中文输入</span>
+              <span className="hidden sm:inline">Chinese Input</span>
+              <span className="sm:hidden">Chinese</span>
             </h2>
             <button
               onClick={handleClear}
               className="min-h-[44px] px-3 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors touch-manipulation"
             >
-              <span className="hidden sm:inline">清除 Clear</span>
-              <span className="sm:hidden">清除</span>
+              <span className="hidden sm:inline">Clear</span>
+              <span className="sm:hidden">Clear</span>
             </button>
           </div>
 
@@ -136,7 +136,7 @@ const TextTranslator = () => {
             <textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="请输入要翻译的中文文本..."
+              placeholder="Enter Chinese text to translate..."
               className="w-full h-48 sm:h-56 lg:h-64 p-4 sm:p-5
                          border-2 border-gray-200 rounded-xl
                          resize-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200
@@ -147,7 +147,7 @@ const TextTranslator = () => {
               style={{ fontSize: '16px' }} // Prevent zoom on iOS
             />
             <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 text-xs sm:text-sm text-gray-400 bg-white px-2 py-1 rounded">
-              {inputText.length} 字符
+              {inputText.length} characters
             </div>
           </div>
         </div>
@@ -160,7 +160,7 @@ const TextTranslator = () => {
                 EN
               </span>
               <span className="hidden sm:inline">English Translation</span>
-              <span className="sm:hidden">英文输出</span>
+              <span className="sm:hidden">English</span>
             </h2>
             {outputText && (
               <div className="flex items-center space-x-2 sm:space-x-3">
@@ -181,7 +181,7 @@ const TextTranslator = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
                   <span className="hidden sm:inline">Reading</span>
-                  <span className="sm:hidden">阅读</span>
+                  <span className="sm:hidden">Read</span>
                 </button>
               </div>
             )}
@@ -191,7 +191,7 @@ const TextTranslator = () => {
             <textarea
               value={outputText}
               readOnly
-              placeholder={isLoading ? "正在翻译..." : "Translation will appear here..."}
+              placeholder={isLoading ? "Translating..." : "Translation will appear here..."}
               className="w-full h-48 sm:h-56 lg:h-64 p-4 sm:p-5
                          border-2 border-gray-200 rounded-xl
                          resize-none bg-gray-50
@@ -203,7 +203,7 @@ const TextTranslator = () => {
               <div className="absolute inset-0 flex items-center justify-center bg-gray-50 bg-opacity-90 rounded-xl">
                 <div className="flex flex-col items-center space-y-3 p-4">
                   <div className="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-blue-500"></div>
-                  <span className="text-gray-600 text-sm sm:text-base font-medium">正在翻译...</span>
+                  <span className="text-gray-600 text-sm sm:text-base font-medium">Translating...</span>
                 </div>
               </div>
             )}
@@ -244,14 +244,14 @@ const TextTranslator = () => {
             {isLoading ? (
               <>
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                <span>正在翻译...</span>
+                <span>Translating...</span>
               </>
             ) : (
               <>
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
                 </svg>
-                <span>翻译 Translate</span>
+                <span>Translate</span>
               </>
             )}
           </button>
