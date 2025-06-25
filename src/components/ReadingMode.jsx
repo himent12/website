@@ -5,6 +5,7 @@ const ReadingMode = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const contentRef = useRef(null);
+  const inactivityTimerRef = useRef(null);
   
   // Reading settings state
   const [readingMode, setReadingMode] = useState('day'); // day, night, sepia
@@ -24,7 +25,8 @@ const ReadingMode = () => {
   // Animation and interaction state
   const [isScrolling, setIsScrolling] = useState(false);
   const [lastScrollTime, setLastScrollTime] = useState(0);
-  const [showControls, setShowControls] = useState(true);
+  const [showControls, setShowControls] = useState(false); // Changed to false by default
+  const [lastActivityTime, setLastActivityTime] = useState(Date.now());
   
   // Get the translated text from navigation state
   const translatedText = location.state?.translatedText || '';
@@ -85,9 +87,12 @@ const ReadingMode = () => {
           setReadingProgress(scrollPercent);
           setIsScrolling(true);
           setLastScrollTime(Date.now());
+          setLastActivityTime(Date.now()); // Update activity time on scroll
           
-          // Auto-hide controls when scrolling
+          // Hide controls when scrolling
           setShowControls(false);
+          setShowSettings(false);
+          setShowBookmarks(false);
           
           ticking = false;
         });
@@ -95,21 +100,58 @@ const ReadingMode = () => {
       }
     };
 
-    // Show controls after scrolling stops
-    const showControlsTimer = setInterval(() => {
-      if (Date.now() - lastScrollTime > 2000 && isScrolling) {
-        setIsScrolling(false);
-        setShowControls(true);
-      }
-    }, 100);
-
     window.addEventListener('scroll', handleScroll, { passive: true });
     
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      clearInterval(showControlsTimer);
     };
-  }, [lastScrollTime, isScrolling]);
+  }, []);
+
+  // Inactivity timer to show controls after 45 seconds
+  useEffect(() => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+    
+    inactivityTimerRef.current = setTimeout(() => {
+      setShowControls(true);
+    }, 45000); // 45 seconds
+
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    };
+  }, [lastActivityTime]);
+
+  // Handle click on middle of screen to show/hide controls
+  const handleScreenClick = useCallback((e) => {
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    const clickX = e.clientX;
+    const clickY = e.clientY;
+    
+    // Define middle area (center 1/3 of screen)
+    const middleXStart = screenWidth * 0.33;
+    const middleXEnd = screenWidth * 0.67;
+    const middleYStart = screenHeight * 0.33;
+    const middleYEnd = screenHeight * 0.67;
+    
+    if (clickX >= middleXStart && clickX <= middleXEnd &&
+        clickY >= middleYStart && clickY <= middleYEnd) {
+      setShowControls(!showControls);
+      setLastActivityTime(Date.now());
+    }
+  }, [showControls]);
+
+  // Add click event listener
+  useEffect(() => {
+    document.addEventListener('click', handleScreenClick);
+    
+    return () => {
+      document.removeEventListener('click', handleScreenClick);
+    };
+  }, [handleScreenClick]);
 
   // Format text with markdown-style formatting
   const formatText = (text) => {
@@ -537,34 +579,36 @@ const ReadingMode = () => {
         </div>
       </div>
 
-      {/* Floating Action Buttons */}
-      <div className="fixed bottom-6 right-6 flex flex-col space-y-3 z-40">
-        {/* Scroll to Top */}
-        {readingProgress > 10 && (
-          <button
-            onClick={scrollToTop}
-            className={`w-12 h-12 rounded-full ${currentTheme.controlsBg} ${currentTheme.shadow} border ${currentTheme.border} flex items-center justify-center transition-all transform hover:scale-110`}
-            title="Scroll to Top"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-            </svg>
-          </button>
-        )}
+      {/* Floating Action Buttons - Only show when controls are visible */}
+      {showControls && (
+        <div className="fixed bottom-6 right-6 flex flex-col space-y-3 z-40">
+          {/* Scroll to Top */}
+          {readingProgress > 10 && (
+            <button
+              onClick={scrollToTop}
+              className={`w-12 h-12 rounded-full ${currentTheme.controlsBg} ${currentTheme.shadow} border ${currentTheme.border} flex items-center justify-center transition-all transform hover:scale-110`}
+              title="Scroll to Top"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+              </svg>
+            </button>
+          )}
 
-        {/* Scroll to Bottom */}
-        {readingProgress < 90 && (
-          <button
-            onClick={scrollToBottom}
-            className={`w-12 h-12 rounded-full ${currentTheme.controlsBg} ${currentTheme.shadow} border ${currentTheme.border} flex items-center justify-center transition-all transform hover:scale-110`}
-            title="Scroll to Bottom"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-            </svg>
-          </button>
-        )}
-      </div>
+          {/* Scroll to Bottom */}
+          {readingProgress < 90 && (
+            <button
+              onClick={scrollToBottom}
+              className={`w-12 h-12 rounded-full ${currentTheme.controlsBg} ${currentTheme.shadow} border ${currentTheme.border} flex items-center justify-center transition-all transform hover:scale-110`}
+              title="Scroll to Bottom"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
