@@ -56,23 +56,41 @@ const parseCookies = (req) => {
 
 // Helper function to get decrypted API key from cookies/headers
 const getSessionApiKey = (req, keyName) => {
+  console.log(`🍪 DIAGNOSTIC: getSessionApiKey called for keyName: ${keyName}`);
   try {
     // Parse cookies from request headers
     const cookies = parseCookies(req);
+    console.log(`   - Parsed cookies: ${JSON.stringify(Object.keys(cookies), null, 2)}`);
+    
     const sessionCookie = cookies[`session-${keyName}`];
+    console.log(`   - Session cookie exists: ${!!sessionCookie}`);
+    console.log(`   - Session cookie length: ${sessionCookie?.length || 0}`);
     
     if (!sessionCookie) {
+      console.log('   - No session cookie found, returning null');
       return null;
     }
     
+    console.log('   - Attempting to decode base64 session cookie');
     const sessionData = JSON.parse(Buffer.from(sessionCookie, 'base64').toString());
+    console.log(`   - Session data keys: ${JSON.stringify(Object.keys(sessionData), null, 2)}`);
+    console.log(`   - Session data has apiKeys: ${!!sessionData.apiKeys}`);
+    console.log(`   - Session data apiKeys keys: ${sessionData.apiKeys ? JSON.stringify(Object.keys(sessionData.apiKeys), null, 2) : 'N/A'}`);
+    
     if (!sessionData.apiKeys || !sessionData.apiKeys[keyName]) {
+      console.log(`   - No API key found for ${keyName} in session data`);
       return null;
     }
     
-    return decryptApiKey(sessionData.apiKeys[keyName]);
+    console.log('   - Attempting to decrypt API key');
+    const decryptedKey = decryptApiKey(sessionData.apiKeys[keyName]);
+    console.log(`   - Decryption successful: ${!!decryptedKey}`);
+    console.log(`   - Decrypted key length: ${decryptedKey?.length || 0}`);
+    
+    return decryptedKey;
   } catch (error) {
-    console.error('Error retrieving session API key:', error);
+    console.error('❌ DIAGNOSTIC: Error retrieving session API key:', error.message);
+    console.error(`   - Error stack: ${error.stack}`);
     return null;
   }
 };
@@ -132,6 +150,24 @@ const deepseek = new OpenAI({
 });
 
 export default async function handler(req, res) {
+  // DIAGNOSTIC: Function entry point
+  console.log('🚀 DIAGNOSTIC: Translation function started');
+  console.log(`   - Timestamp: ${new Date().toISOString()}`);
+  console.log(`   - Method: ${req.method}`);
+  console.log(`   - URL: ${req.url}`);
+  console.log(`   - Headers: ${JSON.stringify(req.headers, null, 2)}`);
+  
+  // DIAGNOSTIC: Environment variables check
+  console.log('🔧 DIAGNOSTIC: Environment variables check');
+  console.log(`   - DEEPSEEK_API_KEY exists: ${!!process.env.DEEPSEEK_API_KEY}`);
+  console.log(`   - DEEPSEEK_API_KEY length: ${process.env.DEEPSEEK_API_KEY?.length || 0}`);
+  console.log(`   - DEEPSEEK_API_KEY starts with sk-: ${process.env.DEEPSEEK_API_KEY?.startsWith('sk-') || false}`);
+  console.log(`   - SESSION_SECRET exists: ${!!process.env.SESSION_SECRET}`);
+  console.log(`   - SESSION_SECRET is placeholder: ${process.env.SESSION_SECRET === 'your-super-secret-session-key-change-this-in-production'}`);
+  console.log(`   - ENCRYPTION_KEY exists: ${!!process.env.ENCRYPTION_KEY}`);
+  console.log(`   - ENCRYPTION_KEY is placeholder: ${process.env.ENCRYPTION_KEY === 'your-32-byte-encryption-key-change-this-in-production'}`);
+  console.log(`   - NODE_ENV: ${process.env.NODE_ENV}`);
+
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -139,12 +175,14 @@ export default async function handler(req, res) {
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('✅ DIAGNOSTIC: Handling OPTIONS preflight request');
     res.status(200).end();
     return;
   }
 
   // Only allow POST requests
   if (req.method !== 'POST') {
+    console.log(`❌ DIAGNOSTIC: Invalid method ${req.method}, returning 405`);
     return res.status(405).json({
       error: 'Method not allowed',
       message: 'Only POST requests are allowed'
@@ -152,6 +190,31 @@ export default async function handler(req, res) {
   }
 
   try {
+    // DIAGNOSTIC: Request body parsing
+    console.log('📝 DIAGNOSTIC: Request body parsing');
+    console.log(`   - Body exists: ${!!req.body}`);
+    console.log(`   - Body type: ${typeof req.body}`);
+    console.log(`   - Body content: ${JSON.stringify(req.body, null, 2)}`);
+    
+    // Manual JSON parsing if body is string (common in Vercel)
+    let parsedBody = req.body;
+    if (typeof req.body === 'string') {
+      console.log('🔄 DIAGNOSTIC: Parsing JSON body from string');
+      try {
+        parsedBody = JSON.parse(req.body);
+        console.log(`   - Parsed successfully: ${JSON.stringify(parsedBody, null, 2)}`);
+      } catch (parseError) {
+        console.error('❌ DIAGNOSTIC: JSON parsing failed:', parseError.message);
+        return res.status(400).json({
+          error: 'Invalid JSON in request body',
+          message: 'Request body must be valid JSON'
+        });
+      }
+    }
+    
+    // Update req.body with parsed version
+    req.body = parsedBody;
+
     // Validate request
     const validation = validateTranslationRequest(req);
     if (!validation.valid) {
@@ -169,23 +232,45 @@ export default async function handler(req, res) {
     console.log(`   - Text length: ${text.length}`);
     console.log(`   - Request timestamp: ${new Date().toISOString()}`);
 
+    // DIAGNOSTIC: API key retrieval
+    console.log('🔑 DIAGNOSTIC: API key retrieval process');
+    
     // Get API key from session storage or environment
-    let apiKeyToUse = getSessionApiKey(req, 'deepseek');
+    let sessionApiKey;
+    try {
+      sessionApiKey = getSessionApiKey(req, 'deepseek');
+      console.log(`   - Session API key retrieval: ${sessionApiKey ? 'SUCCESS' : 'FAILED/NULL'}`);
+      if (sessionApiKey) {
+        console.log(`   - Session API key length: ${sessionApiKey.length}`);
+        console.log(`   - Session API key starts with sk-: ${sessionApiKey.startsWith('sk-')}`);
+      }
+    } catch (sessionError) {
+      console.error('❌ DIAGNOSTIC: Session API key retrieval error:', sessionError.message);
+      sessionApiKey = null;
+    }
+    
+    let apiKeyToUse = sessionApiKey;
     
     // Fallback to server's default API key if no session key
     if (!apiKeyToUse) {
       apiKeyToUse = process.env.DEEPSEEK_API_KEY;
+      console.log(`   - Fallback to environment API key: ${!!apiKeyToUse}`);
+      if (apiKeyToUse) {
+        console.log(`   - Environment API key length: ${apiKeyToUse.length}`);
+        console.log(`   - Environment API key starts with sk-: ${apiKeyToUse.startsWith('sk-')}`);
+      }
     }
 
     // Check if any API key is available
     if (!apiKeyToUse || apiKeyToUse === 'your_api_key_here') {
+      console.error('❌ DIAGNOSTIC: No valid API key available');
       return res.status(500).json({
         error: 'API configuration error: No API key available',
         message: 'Please configure your API key in the API Settings tab or contact administrator.'
       });
     }
 
-    console.log(`Using API key from: ${getSessionApiKey(req, 'deepseek') ? 'session' : 'server environment'}`);
+    console.log(`✅ DIAGNOSTIC: Using API key from: ${sessionApiKey ? 'session' : 'server environment'}`);
 
     // Model selection logic
     const modelMapping = {
@@ -220,50 +305,92 @@ export default async function handler(req, res) {
 
 Translate the following Chinese text to English:`;
 
-    // Create DeepSeek client with the appropriate API key
-    const clientToUse = getSessionApiKey(req, 'deepseek') ?
-      new OpenAI({
-        baseURL: 'https://api.deepseek.com',
-        apiKey: apiKeyToUse,
-      }) :
-      deepseek;
+    // DIAGNOSTIC: OpenAI client creation
+    console.log('🤖 DIAGNOSTIC: OpenAI client creation');
+    let clientToUse;
+    try {
+      if (sessionApiKey) {
+        console.log('   - Creating new OpenAI client with session API key');
+        clientToUse = new OpenAI({
+          baseURL: 'https://api.deepseek.com',
+          apiKey: apiKeyToUse,
+        });
+      } else {
+        console.log('   - Using pre-initialized deepseek client');
+        clientToUse = deepseek;
+      }
+      console.log('✅ DIAGNOSTIC: OpenAI client created successfully');
+    } catch (clientError) {
+      console.error('❌ DIAGNOSTIC: OpenAI client creation failed:', clientError.message);
+      throw new Error(`Failed to create OpenAI client: ${clientError.message}`);
+    }
 
-    // Make API call to DeepSeek
-    console.log(`🔍 DIAGNOSTIC: Making API call to DeepSeek`);
+    // DIAGNOSTIC: API request preparation
+    console.log('📡 DIAGNOSTIC: Preparing API request');
     console.log(`   - Model: ${selectedModel}`);
     console.log(`   - Temperature: 1.3`);
+    console.log(`   - Max tokens: ${selectedModel === 'deepseek-reasoner' ? 8192 : 4096}`);
+    console.log(`   - System prompt length: ${systemPrompt.length}`);
+    console.log(`   - User text length: ${text.length}`);
     
     const apiRequestStart = Date.now();
+    console.log('🚀 DIAGNOSTIC: Making API call to DeepSeek...');
     
-    const completion = await clientToUse.chat.completions.create({
-      model: selectedModel,
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt
-        },
-        {
-          role: 'user',
-          content: text
-        }
-      ],
-      temperature: 1.3,
-      max_tokens: selectedModel === 'deepseek-reasoner' ? 8192 : 4096,
-      top_p: 0.9
-    });
-    
-    const apiRequestDuration = Date.now() - apiRequestStart;
-    console.log(`✅ API call completed in ${apiRequestDuration}ms`);
+    let completion;
+    try {
+      completion = await clientToUse.chat.completions.create({
+        model: selectedModel,
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: text
+          }
+        ],
+        temperature: 1.3,
+        max_tokens: selectedModel === 'deepseek-reasoner' ? 8192 : 4096,
+        top_p: 0.9
+      });
+      
+      const apiRequestDuration = Date.now() - apiRequestStart;
+      console.log(`✅ DIAGNOSTIC: API call completed successfully in ${apiRequestDuration}ms`);
+      console.log(`   - Response choices length: ${completion.choices?.length || 0}`);
+      console.log(`   - First choice message exists: ${!!completion.choices?.[0]?.message}`);
+      console.log(`   - First choice content length: ${completion.choices?.[0]?.message?.content?.length || 0}`);
+      
+    } catch (apiError) {
+      const apiRequestDuration = Date.now() - apiRequestStart;
+      console.error(`❌ DIAGNOSTIC: API call failed after ${apiRequestDuration}ms`);
+      console.error(`   - Error type: ${apiError.constructor.name}`);
+      console.error(`   - Error message: ${apiError.message}`);
+      console.error(`   - Error code: ${apiError.code}`);
+      console.error(`   - Error status: ${apiError.status}`);
+      console.error(`   - Error response: ${JSON.stringify(apiError.response?.data, null, 2)}`);
+      throw apiError; // Re-throw to be handled by outer catch
+    }
 
+    // DIAGNOSTIC: Response processing
+    console.log('📤 DIAGNOSTIC: Processing API response');
     const translatedText = completion.choices[0]?.message?.content?.trim();
+    console.log(`   - Translated text exists: ${!!translatedText}`);
+    console.log(`   - Translated text length: ${translatedText?.length || 0}`);
+    console.log(`   - Translated text preview: ${translatedText?.substring(0, 100)}...`);
 
     if (!translatedText) {
+      console.error('❌ DIAGNOSTIC: Empty response from translation service');
       throw new Error('Empty response from translation service');
     }
 
-    console.log(`Translation completed successfully using ${selectedModel}, output length: ${translatedText.length}`);
+    console.log(`✅ DIAGNOSTIC: Translation completed successfully using ${selectedModel}`);
+    console.log(`   - Original text length: ${text.length}`);
+    console.log(`   - Translated text length: ${translatedText.length}`);
 
-    res.json({
+    // DIAGNOSTIC: Preparing response
+    console.log('📋 DIAGNOSTIC: Preparing JSON response');
+    const responseData = {
       translatedText: translatedText,
       sourceLanguage: from,
       targetLanguage: to,
@@ -271,13 +398,20 @@ Translate the following Chinese text to English:`;
       temperature: 1.3,
       originalLength: text.length,
       translatedLength: translatedText.length
-    });
+    };
+    console.log(`   - Response data: ${JSON.stringify(responseData, null, 2)}`);
+
+    res.json(responseData);
+    console.log('✅ DIAGNOSTIC: Response sent successfully');
 
   } catch (error) {
-    console.error('🚨 DIAGNOSTIC: Translation error details:');
+    console.error('🚨 DIAGNOSTIC: Translation error caught in main try-catch:');
+    console.error(`   - Error type: ${error.constructor.name}`);
     console.error(`   - Error message: ${error.message}`);
     console.error(`   - Error code: ${error.code}`);
     console.error(`   - Error status: ${error.status}`);
+    console.error(`   - Error stack: ${error.stack}`);
+    console.error(`   - Full error object: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`);
 
     // Handle different types of errors
     if (error.code === 'insufficient_quota') {
