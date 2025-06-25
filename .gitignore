@@ -98,3 +98,8 @@ temp/
 
 # Serverless directories
 .serverless/
+COMPREHENSIVE_SECURITY_ASSESSMENT.md
+SECURITY_REPORT.md
+security_assessment.js
+test_scraper.js
+exploit_poc.js

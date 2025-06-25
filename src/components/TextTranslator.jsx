@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saveTranslation } from '../utils/translationHistory';
-import { getUserApiKey, hasUserApiKey } from '../utils/userApiKeyManager';
 
 const TextTranslator = () => {
   const navigate = useNavigate();
@@ -9,6 +8,41 @@ const TextTranslator = () => {
   const [outputText, setOutputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [translationStartTime, setTranslationStartTime] = useState(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  
+  // Model selection state
+  const [selectedModel, setSelectedModel] = useState('deepseek-reasoner');
+
+  // Timer effect for real-time updates
+  useEffect(() => {
+    let interval = null;
+    
+    if (isLoading && translationStartTime) {
+      interval = setInterval(() => {
+        const now = Date.now();
+        const elapsed = Math.floor((now - translationStartTime) / 1000);
+        setElapsedTime(elapsed);
+      }, 1000);
+    } else {
+      setElapsedTime(0);
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isLoading, translationStartTime]);
+
+
+  // Format elapsed time as MM:SS
+  const formatElapsedTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
 
   const handleTranslate = async () => {
     if (!inputText.trim()) {
@@ -18,33 +52,26 @@ const TextTranslator = () => {
 
     setIsLoading(true);
     setError(null);
-    
-    // Check if user has their own API key
-    const userHasApiKey = hasUserApiKey('deepseek');
+    setTranslationStartTime(Date.now());
+    setElapsedTime(0);
 
     try {
-      // Prepare request payload
+      // Prepare request payload with selected model
       const requestBody = {
         text: inputText.trim(),
         from: 'zh',
-        to: 'en'
+        to: 'en',
+        model: selectedModel
       };
 
-      // Add user API key if available
-      if (userHasApiKey) {
-        const apiKey = getUserApiKey('deepseek');
-        if (apiKey) {
-          requestBody.userApiKey = apiKey;
-        }
-      }
-
-      // Make API request with optimized headers
+      // Make API request with session credentials
       const response = await fetch('/api/translate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
+        credentials: 'include', // Include session cookies
         body: JSON.stringify(requestBody),
       });
 
@@ -66,6 +93,7 @@ const TextTranslator = () => {
       console.error('Translation error:', err);
     } finally {
       setIsLoading(false);
+      setTranslationStartTime(null);
     }
   };
 
@@ -73,6 +101,8 @@ const TextTranslator = () => {
     setInputText('');
     setOutputText('');
     setError('');
+    setTranslationStartTime(null);
+    setElapsedTime(0);
   };
 
   const handleCopyOutput = async () => {
@@ -215,6 +245,20 @@ const TextTranslator = () => {
           </div>
         </div>
 
+        {/* Translation Timer */}
+        {isLoading && translationStartTime && (
+          <div className="mb-6 flex justify-center">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 flex items-center space-x-2">
+              <svg className="w-4 h-4 text-blue-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-blue-700 text-sm font-medium">
+                Translation time: {formatElapsedTime(elapsedTime)}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Error Message */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
@@ -226,6 +270,37 @@ const TextTranslator = () => {
             </div>
           </div>
         )}
+
+        {/* Model Selection */}
+        <div className="mb-6 lg:mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+            {/* Model Selection */}
+            <div className="flex items-center space-x-3">
+              <label className="text-sm font-medium text-gray-700">Model:</label>
+              <select
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                disabled={isLoading}
+                className="min-h-[44px] px-3 py-2 border-2 border-gray-200 rounded-lg
+                           focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none
+                           text-sm font-medium bg-white disabled:bg-gray-100 disabled:cursor-not-allowed
+                           touch-manipulation"
+              >
+                <option value="deepseek-reasoner">DeepSeek Reasoner</option>
+                <option value="deepseek-chat">DeepSeek Chat</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Model Description */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
+            {selectedModel === 'deepseek-reasoner' ? (
+              <p><strong>DeepSeek Reasoner:</strong> Advanced reasoning model with enhanced logical thinking capabilities for complex translations.</p>
+            ) : (
+              <p><strong>DeepSeek Chat:</strong> Fast and efficient conversational model optimized for general translation tasks.</p>
+            )}
+          </div>
+        </div>
 
         {/* Mobile-Optimized Action Button */}
         <div className="flex justify-center mb-8">

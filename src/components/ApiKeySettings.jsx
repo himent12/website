@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   saveUserApiKey,
-  getUserApiKey,
   hasUserApiKey,
   getApiKeyMetadata,
   removeUserApiKey,
-  clearAllApiKeys
+  clearAllApiKeys,
+  migrateFromLocalStorage
 } from '../utils/userApiKeyManager';
 
 const ApiKeySettings = () => {
@@ -16,52 +16,80 @@ const ApiKeySettings = () => {
   const [keyMetadata, setKeyMetadata] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [serverConnected, setServerConnected] = useState(true);
 
-  const loadKeyData = useCallback(() => {
-    if (hasUserApiKey('deepseek')) {
-      const metadata = getApiKeyMetadata('deepseek');
-      setKeyMetadata(metadata);
-      setKeyStatus('saved');
+  const loadKeyData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const hasKey = await hasUserApiKey('deepseek');
+      
+      if (hasKey) {
+        const metadata = await getApiKeyMetadata('deepseek');
+        setKeyMetadata(metadata);
+        setKeyStatus('saved');
+        setServerConnected(true);
 
-      // Only load the actual key when editing
-      if (isEditing) {
-        setDeepseekKey(getUserApiKey('deepseek') || '');
+        // For editing, we don't load the actual key since it's stored server-side
+        // We just show a placeholder
+        if (isEditing) {
+          setDeepseekKey(''); // Always start empty for security
+        } else {
+          setDeepseekKey(''); // Clear from state when not editing
+        }
       } else {
-        setDeepseekKey(''); // Clear from state when not editing
+        setKeyMetadata(null);
+        setKeyStatus('');
+        setDeepseekKey('');
+        setServerConnected(true);
       }
-    } else {
+    } catch (error) {
+      console.error('Error loading key data:', error);
+      setServerConnected(false);
       setKeyMetadata(null);
-      setKeyStatus('');
-      setDeepseekKey('');
+      setKeyStatus('error');
+    } finally {
+      setLoading(false);
     }
   }, [isEditing]);
 
   useEffect(() => {
-    loadKeyData();
+    // Migrate old client-side keys on component mount
+    migrateFromLocalStorage().then(() => {
+      loadKeyData();
+    });
   }, [loadKeyData]);
 
-  const handleSaveKey = () => {
+  const handleSaveKey = async () => {
     if (!deepseekKey.trim()) {
       setKeyStatus('error');
       return;
     }
 
-    const result = saveUserApiKey('deepseek', deepseekKey);
-    if (result.success) {
-      setKeyStatus('saved');
-      setIsEditing(false);
-      setShowKey(false);
-      setDeepseekKey(''); // Clear from state after saving
-      loadKeyData(); // Reload metadata
-    } else {
+    try {
+      setLoading(true);
+      const result = await saveUserApiKey('deepseek', deepseekKey);
+      if (result.success) {
+        setKeyStatus('saved');
+        setIsEditing(false);
+        setShowKey(false);
+        setDeepseekKey(''); // Clear from state after saving
+        await loadKeyData(); // Reload metadata
+      } else {
+        setKeyStatus('error');
+        console.error('Save error:', result.error);
+      }
+    } catch (error) {
       setKeyStatus('error');
-      console.error('Save error:', result.error);
+      console.error('Save error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleEditKey = () => {
     setIsEditing(true);
-    setDeepseekKey(getUserApiKey('deepseek') || '');
+    setDeepseekKey(''); // Always start with empty field for security
     setKeyStatus('');
   };
 
@@ -72,29 +100,62 @@ const ApiKeySettings = () => {
     setKeyStatus(keyMetadata ? 'saved' : '');
   };
 
-  const handleDeleteKey = () => {
-    const result = removeUserApiKey('deepseek');
-    if (result.success) {
-      setKeyMetadata(null);
-      setKeyStatus('deleted');
-      setIsEditing(false);
-      setShowKey(false);
-      setDeepseekKey('');
-      setShowDeleteConfirm(false);
+  const handleDeleteKey = async () => {
+    try {
+      setLoading(true);
+      const result = await removeUserApiKey('deepseek');
+      if (result.success) {
+        setKeyMetadata(null);
+        setKeyStatus('deleted');
+        setIsEditing(false);
+        setShowKey(false);
+        setDeepseekKey('');
+        setShowDeleteConfirm(false);
+      } else {
+        setKeyStatus('error');
+        console.error('Delete error:', result.error);
+      }
+    } catch (error) {
+      setKeyStatus('error');
+      console.error('Delete error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleClearAllKeys = () => {
-    const result = clearAllApiKeys();
-    if (result.success) {
-      setKeyMetadata(null);
-      setKeyStatus('cleared');
-      setIsEditing(false);
-      setShowKey(false);
-      setDeepseekKey('');
-      setShowClearAllConfirm(false);
+  const handleClearAllKeys = async () => {
+    try {
+      setLoading(true);
+      const result = await clearAllApiKeys();
+      if (result.success) {
+        setKeyMetadata(null);
+        setKeyStatus('cleared');
+        setIsEditing(false);
+        setShowKey(false);
+        setDeepseekKey('');
+        setShowClearAllConfirm(false);
+      } else {
+        setKeyStatus('error');
+        console.error('Clear error:', result.error);
+      }
+    } catch (error) {
+      setKeyStatus('error');
+      console.error('Clear error:', error);
+    } finally {
+      setLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading API key settings...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -106,13 +167,15 @@ const ApiKeySettings = () => {
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-800">API Key Management</h2>
                 <p className="text-sm sm:text-base text-gray-600 mt-1">
-                  Manage your personal API keys for translation services
+                  Secure server-side session management for your API keys
                 </p>
               </div>
               <div className="flex items-center space-x-2 sm:space-x-3">
-                <div className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full ${keyMetadata ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                <div className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full ${
+                  !serverConnected ? 'bg-red-500' : keyMetadata ? 'bg-green-500' : 'bg-gray-300'
+                }`}></div>
                 <span className="text-sm sm:text-base text-gray-600 font-medium">
-                  {keyMetadata ? 'API Key Active' : 'No API Key'}
+                  {!serverConnected ? 'Server Disconnected' : keyMetadata ? 'API Key Active' : 'No API Key'}
                 </span>
               </div>
             </div>
@@ -219,22 +282,30 @@ const ApiKeySettings = () => {
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
                   <button
                     onClick={handleSaveKey}
-                    disabled={!deepseekKey.trim()}
+                    disabled={!deepseekKey.trim() || loading}
                     className="min-h-[48px] px-6 py-3 bg-blue-600 text-white font-medium
                                rounded-xl hover:bg-blue-700
                                disabled:bg-gray-300 disabled:cursor-not-allowed
                                transition-colors touch-manipulation
                                flex items-center justify-center"
                   >
-                    {keyMetadata ? 'Update Key' : 'Save Key'}
+                    {loading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Saving...
+                      </>
+                    ) : (
+                      keyMetadata ? 'Update Key' : 'Save Key'
+                    )}
                   </button>
 
                   {isEditing && (
                     <button
                       onClick={handleCancelEdit}
+                      disabled={loading}
                       className="min-h-[48px] px-6 py-3 bg-gray-200 text-gray-700 font-medium
                                  rounded-xl hover:bg-gray-300 transition-colors touch-manipulation
-                                 flex items-center justify-center"
+                                 flex items-center justify-center disabled:opacity-50"
                     >
                       Cancel
                     </button>
@@ -300,11 +371,13 @@ const ApiKeySettings = () => {
               <div>
                 <h3 className="font-semibold text-yellow-800 mb-3 text-sm sm:text-base">Security & Privacy Information</h3>
                 <ul className="text-xs sm:text-sm text-yellow-700 space-y-2">
-                  <li>• Your API keys are stored locally in your browser only</li>
-                  <li>• Keys are obfuscated (not encrypted) for basic protection</li>
-                  <li>• We never send your API keys to our servers</li>
-                  <li>• Translations are processed directly between your browser and the API provider</li>
-                  <li>• Clear your browser data or use the delete button to remove stored keys</li>
+                  <li>• Your API keys are encrypted with AES-256-GCM and stored server-side in secure sessions</li>
+                  <li>• Keys are automatically cleared when your session expires (1 hour)</li>
+                  <li>• API keys never exist on the client-side - maximum security against XSS/extensions</li>
+                  <li>• Server-side encryption with cryptographically secure session management</li>
+                  <li>• Session tokens are HTTP-only cookies protected from JavaScript access</li>
+                  <li>• Keys are stored in server memory only - no persistent disk storage</li>
+                  <li>• Translations use your session-stored keys without exposing them to the client</li>
                   <li>• Never share your API keys with others</li>
                 </ul>
               </div>

@@ -124,12 +124,30 @@ const WebScraper = () => {
         body: JSON.stringify(requestBody),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Translation failed: ${response.status}`);
+      // Get response text first to avoid double JSON parsing
+      const responseText = await response.text();
+
+      // Check if response is empty
+      if (!responseText || responseText.trim().length === 0) {
+        throw new Error('Empty response from translation server');
       }
 
-      const data = await response.json();
+      // Parse JSON once
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (jsonError) {
+        console.error('Translation JSON parsing failed. Raw response:', responseText.substring(0, 200));
+        // Check if this looks like an HTML error page (common with proxy errors)
+        if (responseText.toLowerCase().includes('<html') || responseText.toLowerCase().includes('proxy error')) {
+          throw new Error('Translation service is temporarily unavailable. Please try again later.');
+        }
+        throw new Error('Invalid JSON response from translation server');
+      }
+
+      if (!response.ok) {
+        throw new Error(data.message || data.error || `Translation failed: ${response.status}`);
+      }
       const translated = data.translatedText || data.translation || '';
       
       setTranslatedText(translated);
@@ -323,8 +341,7 @@ const WebScraper = () => {
               </p>
               <div className="max-h-64 overflow-y-auto">
                 <p className="text-sm sm:text-base text-gray-700 leading-relaxed whitespace-pre-wrap">
-                  {scrapedData.content.substring(0, 1000)}
-                  {scrapedData.content.length > 1000 && '...'}
+                  {scrapedData.content}
                 </p>
               </div>
             </div>
