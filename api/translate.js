@@ -3,15 +3,7 @@ const { validateTranslationData } = require('../lib/validators/translationValida
 const { translateText, getTranslationApiKeyFromCookies, handleTranslationError } = require('../lib/services/translationService');
 
 export default async function handler(req, res) {
-  // DIAGNOSTIC: Function entry point
-  console.log('🚀 DIAGNOSTIC: Translation function started');
-  console.log(`   - Timestamp: ${new Date().toISOString()}`);
-  console.log(`   - Method: ${req.method}`);
-  console.log(`   - URL: ${req.url}`);
-  
-  // DIAGNOSTIC: Session-based API key system (no environment variables used)
-  console.log('🔧 DIAGNOSTIC: User-provided API key system active');
-  console.log(`   - NODE_ENV: ${process.env.NODE_ENV}`);
+  console.log(`Translation request: ${req.method} ${req.url}`);
 
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -20,14 +12,14 @@ export default async function handler(req, res) {
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('✅ DIAGNOSTIC: Handling OPTIONS preflight request');
+    console.log('Handling OPTIONS preflight request');
     res.status(200).end();
     return;
   }
 
   // Only allow POST requests
   if (req.method !== 'POST') {
-    console.log(`❌ DIAGNOSTIC: Invalid method ${req.method}, returning 405`);
+    console.log(`Invalid method ${req.method}, returning 405`);
     return res.status(405).json({
       error: 'Method not allowed',
       message: 'Only POST requests are allowed'
@@ -35,21 +27,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    // DIAGNOSTIC: Request body parsing
-    console.log('📝 DIAGNOSTIC: Request body parsing');
-    console.log(`   - Body exists: ${!!req.body}`);
-    console.log(`   - Body type: ${typeof req.body}`);
-    console.log(`   - Body content: ${JSON.stringify(req.body, null, 2)}`);
-    
     // Manual JSON parsing if body is string (common in Vercel)
     let parsedBody = req.body;
     if (typeof req.body === 'string') {
-      console.log('🔄 DIAGNOSTIC: Parsing JSON body from string');
+      console.log('Parsing JSON body from string');
       try {
         parsedBody = JSON.parse(req.body);
-        console.log(`   - Parsed successfully: ${JSON.stringify(parsedBody, null, 2)}`);
       } catch (parseError) {
-        console.error('❌ DIAGNOSTIC: JSON parsing failed:', parseError.message);
+        console.error('JSON parsing failed:', parseError.message);
         return res.status(400).json({
           error: 'Invalid JSON in request body',
           message: 'Request body must be valid JSON'
@@ -74,32 +59,57 @@ export default async function handler(req, res) {
     // Get API key from cookies (serverless environment)
     const apiKey = getTranslationApiKeyFromCookies(req);
 
-    // Check if user has provided an API key
+    // Check if user has provided an API key with enhanced error handling
     if (!apiKey) {
-      console.error('❌ DIAGNOSTIC: No user API key found in session');
+      console.error('❌ No user API key found in session');
       return res.status(401).json({
-        error: 'No API key provided',
-        message: 'Please configure your DeepSeek API key in the API Settings tab before using translation.'
+        error: 'Authentication Required',
+        message: 'Please configure your DeepSeek API key in the API Settings tab before using translation.',
+        action: 'configure_api_key',
+        details: 'Your API key may have expired or been corrupted. Please re-enter it in the API Settings.'
       });
     }
 
-    console.log(`✅ DIAGNOSTIC: Using user-provided API key from encrypted session`);
+    console.log('Using user-provided API key from encrypted session');
 
     // Perform translation using shared service
     const result = await translateText(text, from, to, model, apiKey);
 
-    console.log('✅ DIAGNOSTIC: Response sent successfully');
+    console.log('Translation completed successfully');
     res.json(result);
 
   } catch (error) {
-    console.error('🚨 DIAGNOSTIC: Translation error caught in main try-catch:', error);
+    console.error('🚨 Translation error caught:', error.message);
 
-    // Handle errors using shared error handler
+    // Enhanced error handling for authentication and session issues
+    if (error.message.includes('No user API key provided') ||
+        error.message.includes('ENCRYPTION_KEY_MISMATCH') ||
+        error.message.includes('DECRYPTION_FAILED') ||
+        error.message.includes('bad decrypt')) {
+      
+      console.error('❌ Authentication/Session error detected');
+      return res.status(401).json({
+        error: 'Session Authentication Error',
+        message: 'Your session has expired or been corrupted. Please re-enter your API key in the API Settings tab.',
+        action: 'reconfigure_api_key',
+        details: 'This error typically occurs when serverless functions use inconsistent encryption keys. Please refresh and re-enter your API key.'
+      });
+    }
+
+    // Handle errors using shared error handler for other types of errors
     const errorResponse = handleTranslationError(error);
-    res.status(errorResponse.status).json({
+    
+    // Remove sensitive diagnostic information from production responses
+    const cleanResponse = {
       error: errorResponse.error,
-      message: errorResponse.message,
-      details: errorResponse.details
-    });
+      message: errorResponse.message
+    };
+    
+    // Only include details in development mode
+    if (errorResponse.details && process.env.NODE_ENV !== 'production') {
+      cleanResponse.details = errorResponse.details;
+    }
+    
+    res.status(errorResponse.status).json(cleanResponse);
   }
 }
