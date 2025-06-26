@@ -215,8 +215,8 @@ const ReadingMode = () => {
     if (!paragraphs.length || viewMode !== 'page') return;
     
     // Mobile-optimized pagination calculation
-    const headerHeight = isMobile ? 70 : 80; // Smaller header on mobile
-    const paddingHeight = isMobile ? 60 : 80; // Less padding on mobile
+    const headerHeight = isMobile ? 70 : 80; // Header height
+    const paddingHeight = isMobile ? 40 : 80; // Reduced padding on mobile for more content space
     const availableHeight = window.innerHeight - headerHeight - paddingHeight;
     
     const lineHeightPx = fontSize * lineHeight;
@@ -539,7 +539,7 @@ const ReadingMode = () => {
 
 
   return (
-    <div className={`min-h-screen transition-all duration-500 ${currentTheme.bg}`}>
+    <div className={`min-h-screen transition-all duration-500 ${currentTheme.bg} ${isMobile ? 'mobile-full-height mobile-viewport-fix' : ''}`}>
       {/* Enhanced Progress Bar */}
       <div className="fixed top-0 left-0 w-full h-1 bg-black/10 z-50">
         <div
@@ -866,19 +866,19 @@ const ReadingMode = () => {
       ) : (
         // Page Mode Content - Mobile Optimized
         <div
-          className="fixed inset-0 overflow-hidden"
+          className={`fixed inset-0 overflow-hidden ${isMobile ? 'mobile-content-container' : ''}`}
           style={{
-            paddingTop: isMobile ? '60px' : '80px',
-            paddingBottom: isMobile ? '40px' : '64px'
+            paddingTop: isMobile ? '70px' : '80px',
+            paddingBottom: isMobile ? '20px' : '64px'
           }}
           ref={pageContainerRef}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          <div className={`h-full flex items-center justify-center ${isMobile ? 'px-2' : 'px-4 sm:px-6'}`}>
+          <div className={`h-full flex items-stretch justify-center ${isMobile ? 'px-2' : 'px-4 sm:px-6'}`}>
             <div className="relative w-full h-full" style={{ maxWidth: isMobile ? '100%' : '1024px' }}>
               {/* Page Content Container */}
-              <div className="relative h-full overflow-hidden">
+              <div className={`relative h-full overflow-hidden ${isMobile ? 'mobile-page-content' : ''}`}>
                 {pages.length > 0 && currentPage >= 1 && currentPage <= pages.length && pages[currentPage - 1] && (
                   <div
                     className={`absolute inset-0 transition-all duration-300 ease-in-out ${
@@ -886,13 +886,14 @@ const ReadingMode = () => {
                     }`}
                   >
                     <article
-                      className={`h-full ${currentTheme.contentBg} ${currentTheme.shadow} ${isMobile ? 'rounded-lg' : 'rounded-2xl'} border ${currentTheme.border} overflow-hidden`}
+                      className={`h-full ${currentTheme.contentBg} ${currentTheme.shadow} ${isMobile ? 'rounded-lg mobile-page-content' : 'rounded-2xl'} border ${currentTheme.border} overflow-hidden`}
                       style={{
                         maxWidth: isMobile ? '100%' : `${maxWidth}px`,
-                        margin: '0 auto'
+                        margin: '0 auto',
+                        height: '100%'
                       }}
                     >
-                      <div className={`h-full flex flex-col ${isMobile ? 'p-4' : 'p-8 sm:p-12'}`}>
+                      <div className={`h-full flex flex-col ${isMobile ? 'p-4 pb-6' : 'p-8 sm:p-12'}`}>
                         {/* Page Header - Mobile Optimized */}
                         {pages[currentPage - 1]?.includeTitle && (
                           <div className={`${isMobile ? 'mb-4' : 'mb-8'} flex-shrink-0`}>
@@ -910,37 +911,39 @@ const ReadingMode = () => {
                         )}
                         
                         {/* Page Content - Mobile Optimized */}
-                        <div className="flex-1 overflow-hidden">
-                          {pages[currentPage - 1]?.content.map((paragraph, index) => (
-                            <p
-                              key={`${currentPage}-${index}`}
-                              className={`${isMobile ? 'mb-4' : 'mb-6'} ${currentTheme.text} ${fontOptions.find(f => f.value === fontFamily)?.class || 'font-lora'}`}
-                              style={{
-                                fontSize: `${isMobile ? Math.max(fontSize - 2, 14) : fontSize}px`,
-                                lineHeight: isMobile ? Math.max(lineHeight - 0.1, 1.4) : lineHeight,
-                                textAlign: isMobile ? 'left' : 'justify',
-                                textJustify: isMobile ? 'auto' : 'inter-word',
-                                wordBreak: isMobile ? 'break-word' : 'normal'
-                              }}
-                              dangerouslySetInnerHTML={{
-                                __html: formatText(paragraph)
-                              }}
-                            />
-                          ))}
+                        <div className={`flex-1 overflow-y-auto ${isMobile ? 'mobile-text-container' : ''} scrollbar-hide`} style={{ minHeight: 0 }}>
+                          <div className={`${isMobile ? 'pb-4' : 'pb-8'}`}>
+                            {pages[currentPage - 1]?.content.map((paragraph, index) => (
+                              <p
+                                key={`${currentPage}-${index}`}
+                                className={`${isMobile ? 'mb-4' : 'mb-6'} ${currentTheme.text} ${fontOptions.find(f => f.value === fontFamily)?.class || 'font-lora'}`}
+                                style={{
+                                  fontSize: `${isMobile ? Math.max(fontSize - 2, 14) : fontSize}px`,
+                                  lineHeight: isMobile ? Math.max(lineHeight - 0.1, 1.4) : lineHeight,
+                                  textAlign: isMobile ? 'left' : 'justify',
+                                  textJustify: isMobile ? 'auto' : 'inter-word',
+                                  wordBreak: isMobile ? 'break-word' : 'normal'
+                                }}
+                                dangerouslySetInnerHTML={{
+                                  __html: formatText(paragraph)
+                                }}
+                              />
+                            ))}
+                          </div>
                         </div>
                         
                         {/* End of Document on Last Page */}
                         {currentPage === totalPages && (
-                          <div className="mt-8 text-center flex-shrink-0">
-                            <div className={`text-lg font-medium mb-4 ${currentTheme.text}`}>
+                          <div className={`${isMobile ? 'mt-4' : 'mt-8'} text-center flex-shrink-0`}>
+                            <div className={`${isMobile ? 'text-base' : 'text-lg'} font-medium ${isMobile ? 'mb-2' : 'mb-4'} ${currentTheme.text}`}>
                               End of Document
                             </div>
-                            <p className={`mb-6 ${currentTheme.secondaryText}`}>
+                            <p className={`${isMobile ? 'mb-4 text-sm' : 'mb-6'} ${currentTheme.secondaryText}`}>
                               Thank you for reading! Would you like to translate another document?
                             </p>
                             <button
                               onClick={() => navigate('/')}
-                              className={`px-8 py-3 rounded-full font-medium transition-all transform hover:scale-105 ${
+                              className={`${isMobile ? 'px-6 py-2 text-sm' : 'px-8 py-3'} rounded-full font-medium transition-all transform hover:scale-105 ${
                                 readingMode === 'night'
                                   ? 'bg-blue-600 hover:bg-blue-700 text-white'
                                   : 'bg-amber-600 hover:bg-amber-700 text-white'
