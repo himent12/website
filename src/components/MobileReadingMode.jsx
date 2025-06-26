@@ -336,16 +336,16 @@ const MobileReadingMode = () => {
         />
       </div>
 
-      {/* Mobile-Optimized Floating Controls */}
+      {/* WebNovel-Style Floating Controls */}
       <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-40 transition-all duration-300 safe-area-inset-top ${
         showControls ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
       }`}>
-        <div className={`flex items-center space-x-2 px-4 py-3 rounded-full ${currentTheme.controlsBg} ${currentTheme.border} border ${currentTheme.shadow} mobile-touch-sm`}>
+        <div className={`flex items-center space-x-3 px-5 py-3 rounded-full ${currentTheme.controlsBg} ${currentTheme.shadow} backdrop-blur-xl border border-white/20`}>
           {/* Back Button */}
           <button
             onClick={() => navigate('/')}
-            className={`p-3 rounded-full transition-colors mobile-touch-sm ${currentTheme.buttonHover}`}
-            title="Back to Translator"
+            className={`p-2.5 rounded-full transition-all duration-200 ${currentTheme.buttonHover} hover:scale-105`}
+            title="Back"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -353,30 +353,29 @@ const MobileReadingMode = () => {
           </button>
 
           {/* Progress Display */}
-          <div className={`px-3 py-2 text-sm font-medium ${currentTheme.secondaryText} mobile-text-sm`}>
+          <div className={`px-3 py-1.5 text-sm font-medium ${currentTheme.secondaryText} bg-black/5 rounded-full`}>
             {Math.round(readingProgress)}%
           </div>
 
-          {/* Settings Toggle */}
+          {/* Settings Widget Toggle */}
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className={`p-3 rounded-full transition-colors mobile-touch-sm ${currentTheme.buttonHover} ${showSettings ? currentTheme.accent : ''}`}
-            title="Reading Settings"
+            className={`p-2.5 rounded-full transition-all duration-200 ${showSettings ? 'bg-blue-500 text-white' : currentTheme.buttonHover} hover:scale-105`}
+            title="Settings"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
             </svg>
           </button>
 
-          {/* Bookmarks Toggle */}
+          {/* Favorite Button */}
           <button
-            onClick={() => setShowBookmarks(!showBookmarks)}
-            className={`p-3 rounded-full transition-colors mobile-touch-sm ${currentTheme.buttonHover} ${showBookmarks ? currentTheme.accent : ''}`}
-            title="Bookmarks"
+            onClick={addBookmark}
+            className={`p-2.5 rounded-full transition-all duration-200 ${currentTheme.buttonHover} hover:scale-105`}
+            title="Add Bookmark"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
           </button>
         </div>
@@ -556,209 +555,196 @@ const MobileReadingMode = () => {
         </div>
       </div>
 
-      {/* Mobile-Optimized Settings Panel */}
+      {/* WebNovel-Style Settings Widget */}
       {showSettings && (
-        <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center"
-          onClick={() => setShowSettings(false)}
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
           <div
-            className={`w-full max-w-md ${currentTheme.controlsBg} rounded-t-3xl ${currentTheme.shadow} border-t ${currentTheme.border} overflow-y-auto max-h-[90vh] mobile-slide-up safe-area-inset-bottom`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className={`text-xl font-semibold ${currentTheme.text} mobile-title-text`}>Reading Settings</h3>
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+            onClick={() => setShowSettings(false)}
+          />
+          
+          {/* Settings Widget */}
+          <div className={`relative ${currentTheme.controlsBg} rounded-2xl ${currentTheme.shadow} border border-white/20 backdrop-blur-xl p-6 w-full max-w-sm animate-in zoom-in-95 duration-200`}>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h3 className={`text-lg font-semibold ${currentTheme.text}`}>Settings</h3>
+              <button
+                onClick={() => setShowSettings(false)}
+                className={`p-2 rounded-full ${currentTheme.buttonHover} transition-colors`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Reading Mode Toggle */}
+            <div className="mb-6">
+              <label className={`block text-sm font-medium mb-3 ${currentTheme.text}`}>Reading Mode</label>
+              <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
                 <button
-                  onClick={() => setShowSettings(false)}
-                  className={`p-3 rounded-full mobile-touch-sm ${currentTheme.buttonHover}`}
+                  onClick={() => setViewMode('scroll')}
+                  className={`flex-1 flex items-center justify-center py-2 px-3 rounded-md text-sm font-medium transition-all ${
+                    viewMode === 'scroll'
+                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                   </svg>
+                  Scroll
+                </button>
+                <button
+                  onClick={() => setViewMode('page')}
+                  className={`flex-1 flex items-center justify-center py-2 px-3 rounded-md text-sm font-medium transition-all ${
+                    viewMode === 'page'
+                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Page
                 </button>
               </div>
+            </div>
 
-              <div className="space-y-6 mobile-stack">
-                {/* Theme Selection */}
-                <div>
-                  <label className={`block text-sm font-medium mb-3 ${currentTheme.text} mobile-label`}>Theme</label>
-                  <div className="grid grid-cols-3 gap-3 mobile-grid-auto-sm">
-                    {Object.entries(themes).map(([mode, theme]) => (
-                      <button
-                        key={mode}
-                        onClick={() => setReadingMode(mode)}
-                        className={`p-4 rounded-xl border-2 transition-all mobile-touch-sm ${
-                          readingMode === mode
-                            ? `${theme.border} ${theme.bg}`
-                            : `border-transparent ${currentTheme.buttonHover}`
-                        }`}
-                      >
-                        <div className={`w-full h-8 rounded-lg ${theme.bg} mb-2`}></div>
-                        <span className={`text-xs font-medium capitalize ${currentTheme.text}`}>{mode}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Reading Mode Selection */}
-                <div>
-                  <label className={`block text-sm font-medium mb-3 ${currentTheme.text} mobile-label`}>Reading Mode</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => setViewMode('scroll')}
-                      className={`p-4 rounded-xl border-2 transition-all mobile-touch-sm ${
-                        viewMode === 'scroll'
-                          ? `${currentTheme.border} ${currentTheme.bg}`
-                          : `border-transparent ${currentTheme.buttonHover}`
-                      }`}
-                    >
-                      <div className="flex flex-col items-center">
-                        <svg className="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                        <span className={`text-xs font-medium ${currentTheme.text}`}>Scroll</span>
-                      </div>
-                    </button>
-                    <button
-                      onClick={() => setViewMode('page')}
-                      className={`p-4 rounded-xl border-2 transition-all mobile-touch-sm ${
-                        viewMode === 'page'
-                          ? `${currentTheme.border} ${currentTheme.bg}`
-                          : `border-transparent ${currentTheme.buttonHover}`
-                      }`}
-                    >
-                      <div className="flex flex-col items-center">
-                        <svg className="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span className={`text-xs font-medium ${currentTheme.text}`}>Page</span>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Font Family */}
-                <div>
-                  <label className={`block text-sm font-medium mb-3 ${currentTheme.text} mobile-label`}>Font Family</label>
-                  <select
-                    value={fontFamily}
-                    onChange={(e) => setFontFamily(e.target.value)}
-                    className={`w-full p-4 rounded-xl border ${currentTheme.border} ${currentTheme.controlsBg} ${currentTheme.text} mobile-input-field mobile-touch-sm`}
+            {/* Theme Selection */}
+            <div className="mb-6">
+              <label className={`block text-sm font-medium mb-3 ${currentTheme.text}`}>Theme</label>
+              <div className="flex space-x-3">
+                {Object.entries(themes).map(([mode, theme]) => (
+                  <button
+                    key={mode}
+                    onClick={() => setReadingMode(mode)}
+                    className={`flex-1 p-3 rounded-lg border-2 transition-all ${
+                      readingMode === mode
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                    }`}
                   >
-                    {fontOptions.map(font => (
-                      <option key={font.value} value={font.value}>{font.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Font Size */}
-                <div>
-                  <label className={`block text-sm font-medium mb-3 ${currentTheme.text} mobile-label`}>
-                    Font Size: {fontSize}px
-                  </label>
-                  <input
-                    type="range"
-                    min="16"
-                    max="24"
-                    value={fontSize}
-                    onChange={(e) => setFontSize(Number(e.target.value))}
-                    className="w-full mobile-touch-sm"
-                  />
-                </div>
-
-                {/* Line Height */}
-                <div>
-                  <label className={`block text-sm font-medium mb-3 ${currentTheme.text} mobile-label`}>
-                    Line Height: {lineHeight}
-                  </label>
-                  <input
-                    type="range"
-                    min="1.4"
-                    max="2.0"
-                    step="0.1"
-                    value={lineHeight}
-                    onChange={(e) => setLineHeight(Number(e.target.value))}
-                    className="w-full mobile-touch-sm"
-                  />
-                </div>
+                    <div className={`w-full h-6 rounded ${theme.bg} mb-2`}></div>
+                    <span className={`text-xs font-medium capitalize ${currentTheme.text}`}>{mode}</span>
+                  </button>
+                ))}
               </div>
+            </div>
+
+            {/* Font Size */}
+            <div className="mb-6">
+              <label className={`block text-sm font-medium mb-3 ${currentTheme.text}`}>
+                Font Size: {fontSize}px
+              </label>
+              <div className="flex items-center space-x-3">
+                <span className="text-sm">A</span>
+                <input
+                  type="range"
+                  min="16"
+                  max="24"
+                  value={fontSize}
+                  onChange={(e) => setFontSize(Number(e.target.value))}
+                  className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                />
+                <span className="text-lg">A</span>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowBookmarks(true)}
+                className={`flex-1 flex items-center justify-center py-3 px-4 rounded-lg ${currentTheme.buttonHover} transition-colors`}
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+                <span className="text-sm font-medium">Bookmarks</span>
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Mobile-Optimized Bookmarks Panel */}
+      {/* Modern Bookmarks Panel */}
       {showBookmarks && (
-        <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center mobile-modal-overlay"
-          onClick={() => setShowBookmarks(false)}
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
           <div
-            className={`w-full max-w-md ${currentTheme.controlsBg} rounded-t-3xl ${currentTheme.shadow} border-t ${currentTheme.border} overflow-hidden mobile-slide-up safe-area-inset-bottom`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6 mobile-content-spacing">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className={`text-xl font-semibold ${currentTheme.text} mobile-title-text`}>Bookmarks</h3>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={addBookmark}
-                    className={`p-3 rounded-full mobile-touch-sm ${currentTheme.buttonHover}`}
-                    title="Add Bookmark"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => setShowBookmarks(false)}
-                    className={`p-3 rounded-full mobile-touch-sm ${currentTheme.buttonHover}`}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+            onClick={() => setShowBookmarks(false)}
+          />
+          
+          {/* Bookmarks Widget */}
+          <div className={`relative ${currentTheme.controlsBg} rounded-2xl ${currentTheme.shadow} border border-white/20 backdrop-blur-xl p-6 w-full max-w-md max-h-[80vh] animate-in zoom-in-95 duration-200`}>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h3 className={`text-lg font-semibold ${currentTheme.text}`}>Bookmarks</h3>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={addBookmark}
+                  className={`p-2 rounded-full ${currentTheme.buttonHover} transition-colors`}
+                  title="Add Bookmark"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setShowBookmarks(false)}
+                  className={`p-2 rounded-full ${currentTheme.buttonHover} transition-colors`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
+            </div>
 
-              <div className="space-y-3 max-h-96 overflow-y-auto mobile-scrollable-content">
-                {bookmarks.length === 0 ? (
-                  <p className={`text-center py-8 ${currentTheme.secondaryText} mobile-body-text`}>
-                    No bookmarks yet. Add one to save your reading position.
+            {/* Bookmarks List */}
+            <div className="space-y-3 overflow-y-auto max-h-96">
+              {bookmarks.length === 0 ? (
+                <div className="text-center py-12">
+                  <svg className="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                  </svg>
+                  <p className={`${currentTheme.secondaryText} text-sm`}>
+                    No bookmarks yet. Tap the + button to add one.
                   </p>
-                ) : (
-                  bookmarks.map(bookmark => (
-                    <div
-                      key={bookmark.id}
-                      className={`p-4 rounded-xl border ${currentTheme.border} ${currentTheme.buttonHover} cursor-pointer group mobile-card-base mobile-touch-sm`}
-                      onClick={() => jumpToBookmark(bookmark.position)}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className={`text-sm font-medium ${currentTheme.text} mb-2 mobile-caption-text`}>
-                            {bookmark.position}% - {bookmark.timestamp}
-                          </div>
-                          <div className={`text-xs ${currentTheme.secondaryText} mobile-line-clamp-2`}>
-                            {bookmark.preview}
-                          </div>
+                </div>
+              ) : (
+                bookmarks.map(bookmark => (
+                  <div
+                    key={bookmark.id}
+                    className={`p-4 rounded-lg border ${currentTheme.border} ${currentTheme.buttonHover} cursor-pointer group transition-all hover:shadow-md`}
+                    onClick={() => jumpToBookmark(bookmark.position)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className={`text-sm font-medium ${currentTheme.text} mb-1`}>
+                          {bookmark.position}% • {bookmark.timestamp}
                         </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeBookmark(bookmark.id);
-                          }}
-                          className={`p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity mobile-touch-sm ${currentTheme.buttonHover}`}
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
+                        <div className={`text-xs ${currentTheme.secondaryText} line-clamp-2`}>
+                          {bookmark.preview}
+                        </div>
                       </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeBookmark(bookmark.id);
+                        }}
+                        className={`p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity ${currentTheme.buttonHover}`}
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
-                  ))
-                )}
-              </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
