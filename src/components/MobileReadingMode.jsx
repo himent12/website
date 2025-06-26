@@ -125,6 +125,88 @@ const MobileReadingMode = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [viewMode]);
 
+  // Page mode pagination logic
+  useEffect(() => {
+    if (viewMode !== 'page') return;
+    
+    const wordsPerPage = 300; // Adjust based on mobile screen size
+    const words = translatedText.split(/\s+/);
+    const totalPagesCount = Math.ceil(words.length / wordsPerPage);
+    
+    const pagesArray = [];
+    for (let i = 0; i < totalPagesCount; i++) {
+      const startIndex = i * wordsPerPage;
+      const endIndex = Math.min(startIndex + wordsPerPage, words.length);
+      const pageWords = words.slice(startIndex, endIndex);
+      pagesArray.push(pageWords.join(' '));
+    }
+    
+    setPages(pagesArray);
+    setTotalPages(totalPagesCount);
+    
+    // Update progress based on current page
+    const pageProgress = totalPagesCount > 0 ? ((currentPage - 1) / (totalPagesCount - 1)) * 100 : 0;
+    setReadingProgress(pageProgress);
+  }, [viewMode, translatedText, currentPage]);
+
+  // Touch gesture handling for page mode
+  useEffect(() => {
+    if (viewMode !== 'page') return;
+    
+    let touchStartX = 0;
+    let touchEndX = 0;
+    
+    const handleTouchStart = (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    };
+    
+    const handleTouchEnd = (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    };
+    
+    const handleSwipe = () => {
+      const swipeThreshold = 50;
+      const swipeDistance = touchStartX - touchEndX;
+      
+      if (Math.abs(swipeDistance) > swipeThreshold) {
+        if (swipeDistance > 0 && currentPage < totalPages) {
+          // Swipe left - next page
+          setCurrentPage(prev => prev + 1);
+          TouchUtils.hapticFeedback('light');
+        } else if (swipeDistance < 0 && currentPage > 1) {
+          // Swipe right - previous page
+          setCurrentPage(prev => prev - 1);
+          TouchUtils.hapticFeedback('light');
+        }
+      }
+    };
+    
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
+    
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [viewMode, currentPage, totalPages]);
+
+  // Keyboard navigation for page mode
+  useEffect(() => {
+    if (viewMode !== 'page') return;
+    
+    const handleKeyDown = (e) => {
+      if (e.key === 'ArrowLeft' && currentPage > 1) {
+        setCurrentPage(prev => prev - 1);
+      } else if (e.key === 'ArrowRight' && currentPage < totalPages) {
+        setCurrentPage(prev => prev + 1);
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [viewMode, currentPage, totalPages]);
+
   // Auto-hide controls timer
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -259,7 +341,7 @@ const MobileReadingMode = () => {
         </div>
       </div>
 
-      {/* Main Reading Content - Scroll Mode Only for Mobile */}
+      {/* Main Reading Content - Dual Mode Support */}
       <div className="pt-20 pb-16 px-4">
         <div className="max-w-none mx-0">
           {/* Document Header */}
@@ -270,56 +352,144 @@ const MobileReadingMode = () => {
             <div className={`flex flex-wrap items-center gap-2 text-sm ${currentTheme.secondaryText} mobile-caption-text`}>
               <span>Translated from Chinese</span>
               <span>•</span>
-              <span>{paragraphs.length} paragraphs</span>
+              <span>{viewMode === 'page' ? `${pages.length} pages` : `${paragraphs.length} paragraphs`}</span>
               <span>•</span>
               <span>~{Math.ceil(translatedText.split(' ').length / 200)} min read</span>
             </div>
           </div>
 
-          {/* Reading Content */}
-          <article
-            ref={contentRef}
-            className={`${currentTheme.contentBg} ${currentTheme.shadow} rounded-xl mx-2 border ${currentTheme.border} overflow-hidden backdrop-blur-sm`}
-          >
-            <div className="p-6">
-              {paragraphs.map((paragraph, index) => (
-                <p
-                  key={index}
-                  className={`mb-6 ${currentTheme.text} ${fontOptions.find(f => f.value === fontFamily)?.class || 'font-lora'} leading-relaxed mobile-reading-text mobile-text-selection`}
-                  style={{
-                    fontSize: `${fontSize}px`,
-                    lineHeight: Math.max(lineHeight, 1.6),
-                    textAlign: 'left',
-                    wordBreak: 'normal',
-                    hyphens: 'auto'
-                  }}
-                  dangerouslySetInnerHTML={{
-                    __html: formatText(paragraph)
-                  }}
-                />
-              ))}
-            </div>
-          </article>
+          {/* Scroll Mode Content */}
+          {viewMode === 'scroll' && (
+            <>
+              <article
+                ref={contentRef}
+                className={`${currentTheme.contentBg} ${currentTheme.shadow} rounded-xl mx-2 border ${currentTheme.border} overflow-hidden backdrop-blur-sm`}
+              >
+                <div className="p-6">
+                  {paragraphs.map((paragraph, index) => (
+                    <p
+                      key={index}
+                      className={`mb-6 ${currentTheme.text} ${fontOptions.find(f => f.value === fontFamily)?.class || 'font-lora'} leading-relaxed mobile-reading-text mobile-text-selection`}
+                      style={{
+                        fontSize: `${fontSize}px`,
+                        lineHeight: Math.max(lineHeight, 1.6),
+                        textAlign: 'left',
+                        wordBreak: 'normal',
+                        hyphens: 'auto'
+                      }}
+                      dangerouslySetInnerHTML={{
+                        __html: formatText(paragraph)
+                      }}
+                    />
+                  ))}
+                </div>
+              </article>
 
-          {/* End of Document */}
-          <div className={`mt-8 text-center p-6 mx-2 rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border} backdrop-blur-sm`}>
-            <div className={`text-lg font-medium mb-3 ${currentTheme.text} mobile-title-text`}>
-              End of Document
-            </div>
-            <p className={`mb-5 text-sm ${currentTheme.secondaryText} mobile-body-text`}>
-              Thank you for reading! Would you like to translate another document?
-            </p>
-            <button
-              onClick={() => navigate('/')}
-              className={`px-8 py-3 text-sm rounded-full font-medium transition-all transform hover:scale-105 mobile-btn mobile-btn-primary mobile-touch-sm ${
-                readingMode === 'night'
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                  : 'bg-amber-600 hover:bg-amber-700 text-white'
-              } shadow-lg`}
-            >
-              Translate Another Document
-            </button>
-          </div>
+              {/* End of Document - Scroll Mode */}
+              <div className={`mt-8 text-center p-6 mx-2 rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border} backdrop-blur-sm`}>
+                <div className={`text-lg font-medium mb-3 ${currentTheme.text} mobile-title-text`}>
+                  End of Document
+                </div>
+                <p className={`mb-5 text-sm ${currentTheme.secondaryText} mobile-body-text`}>
+                  Thank you for reading! Would you like to translate another document?
+                </p>
+                <button
+                  onClick={() => navigate('/')}
+                  className={`px-8 py-3 text-sm rounded-full font-medium transition-all transform hover:scale-105 mobile-btn mobile-btn-primary mobile-touch-sm ${
+                    readingMode === 'night'
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                      : 'bg-amber-600 hover:bg-amber-700 text-white'
+                  } shadow-lg`}
+                >
+                  Translate Another Document
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Page Mode Content */}
+          {viewMode === 'page' && (
+            <>
+              <div className={`${currentTheme.contentBg} ${currentTheme.shadow} rounded-xl mx-2 border ${currentTheme.border} overflow-hidden backdrop-blur-sm mobile-page-content`}>
+                <div className="p-6 mobile-text-container" style={{ minHeight: '60vh' }}>
+                  {pages.length > 0 && (
+                    <div
+                      className={`${currentTheme.text} ${fontOptions.find(f => f.value === fontFamily)?.class || 'font-lora'} leading-relaxed mobile-reading-text mobile-text-selection`}
+                      style={{
+                        fontSize: `${fontSize}px`,
+                        lineHeight: Math.max(lineHeight, 1.6),
+                        textAlign: 'left',
+                        wordBreak: 'normal',
+                        hyphens: 'auto'
+                      }}
+                      dangerouslySetInnerHTML={{
+                        __html: formatText(pages[currentPage - 1] || '')
+                      }}
+                    />
+                  )}
+                </div>
+
+                {/* Page Navigation */}
+                <div className={`flex items-center justify-between p-4 border-t ${currentTheme.border}`}>
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage <= 1}
+                    className={`p-3 rounded-full transition-colors mobile-touch-sm ${
+                      currentPage <= 1
+                        ? 'opacity-50 cursor-not-allowed'
+                        : `${currentTheme.buttonHover} active:scale-95`
+                    }`}
+                    title="Previous Page"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+
+                  <div className={`text-sm font-medium ${currentTheme.secondaryText} mobile-caption-text`}>
+                    Page {currentPage} of {totalPages}
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage >= totalPages}
+                    className={`p-3 rounded-full transition-colors mobile-touch-sm ${
+                      currentPage >= totalPages
+                        ? 'opacity-50 cursor-not-allowed'
+                        : `${currentTheme.buttonHover} active:scale-95`
+                    }`}
+                    title="Next Page"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* End of Document - Page Mode */}
+              {currentPage === totalPages && (
+                <div className={`mt-8 text-center p-6 mx-2 rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border} backdrop-blur-sm`}>
+                  <div className={`text-lg font-medium mb-3 ${currentTheme.text} mobile-title-text`}>
+                    End of Document
+                  </div>
+                  <p className={`mb-5 text-sm ${currentTheme.secondaryText} mobile-body-text`}>
+                    Thank you for reading! Would you like to translate another document?
+                  </p>
+                  <button
+                    onClick={() => navigate('/')}
+                    className={`px-8 py-3 text-sm rounded-full font-medium transition-all transform hover:scale-105 mobile-btn mobile-btn-primary mobile-touch-sm ${
+                      readingMode === 'night'
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                        : 'bg-amber-600 hover:bg-amber-700 text-white'
+                    } shadow-lg`}
+                  >
+                    Translate Another Document
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
 
@@ -341,17 +511,17 @@ const MobileReadingMode = () => {
               </div>
 
               <div className="space-y-6 mobile-stack">
-                {/* Reading Mode */}
+                {/* Theme Selection */}
                 <div>
-                  <label className={`block text-sm font-medium mb-3 ${currentTheme.text} mobile-label`}>Reading Mode</label>
+                  <label className={`block text-sm font-medium mb-3 ${currentTheme.text} mobile-label`}>Theme</label>
                   <div className="grid grid-cols-3 gap-3 mobile-grid-auto-sm">
                     {Object.entries(themes).map(([mode, theme]) => (
                       <button
                         key={mode}
                         onClick={() => setReadingMode(mode)}
                         className={`p-4 rounded-xl border-2 transition-all mobile-touch-sm ${
-                          readingMode === mode 
-                            ? `${theme.border} ${theme.bg}` 
+                          readingMode === mode
+                            ? `${theme.border} ${theme.bg}`
                             : `border-transparent ${currentTheme.buttonHover}`
                         }`}
                       >
@@ -359,6 +529,43 @@ const MobileReadingMode = () => {
                         <span className={`text-xs font-medium capitalize ${currentTheme.text}`}>{mode}</span>
                       </button>
                     ))}
+                  </div>
+                </div>
+
+                {/* Reading Mode Selection */}
+                <div>
+                  <label className={`block text-sm font-medium mb-3 ${currentTheme.text} mobile-label`}>Reading Mode</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setViewMode('scroll')}
+                      className={`p-4 rounded-xl border-2 transition-all mobile-touch-sm ${
+                        viewMode === 'scroll'
+                          ? `${currentTheme.border} ${currentTheme.bg}`
+                          : `border-transparent ${currentTheme.buttonHover}`
+                      }`}
+                    >
+                      <div className="flex flex-col items-center">
+                        <svg className="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                        <span className={`text-xs font-medium ${currentTheme.text}`}>Scroll</span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => setViewMode('page')}
+                      className={`p-4 rounded-xl border-2 transition-all mobile-touch-sm ${
+                        viewMode === 'page'
+                          ? `${currentTheme.border} ${currentTheme.bg}`
+                          : `border-transparent ${currentTheme.buttonHover}`
+                      }`}
+                    >
+                      <div className="flex flex-col items-center">
+                        <svg className="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span className={`text-xs font-medium ${currentTheme.text}`}>Page</span>
+                      </div>
+                    </button>
                   </div>
                 </div>
 

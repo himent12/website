@@ -256,26 +256,25 @@ html {
 
 /* Mobile viewport fixes for reading mode */
 @media (max-width: 768px) {
-  /* Ensure full height on mobile devices */
+  /* Ensure full height on mobile devices but allow scrolling */
   .mobile-full-height {
-    height: 100vh;
-    height: 100dvh; /* Dynamic viewport height for better mobile support */
     min-height: 100vh;
-    min-height: 100dvh;
+    min-height: 100dvh; /* Dynamic viewport height for better mobile support */
   }
   
-  /* Fix for iOS Safari viewport issues */
+  /* Fix for iOS Safari viewport issues - remove height restrictions */
   .mobile-viewport-fix {
-    height: -webkit-fill-available;
-    min-height: -webkit-fill-available;
+    /* Remove height restrictions that prevent scrolling */
+    min-height: 100vh;
+    min-height: 100dvh;
   }
   
   /* Prevent content from being cut off */
   .mobile-content-container {
     display: flex;
     flex-direction: column;
-    height: 100%;
-    overflow: hidden;
+    min-height: 100vh;
+    /* Remove overflow hidden to allow scrolling */
   }
   
   /* Ensure scrollable content area */
@@ -286,19 +285,36 @@ html {
     min-height: 0;
   }
   
-  /* Fix for page mode content */
+  /* Fix for page mode content - allow proper scrolling */
   .mobile-page-content {
-    height: 100%;
     display: flex;
     flex-direction: column;
+    min-height: 60vh; /* Minimum height but allow expansion */
   }
   
-  /* Prevent text from being cut off at bottom */
+  /* Prevent text from being cut off at bottom - ensure scrolling works */
   .mobile-text-container {
     flex: 1;
     overflow-y: auto;
     padding-bottom: 1rem;
     -webkit-overflow-scrolling: touch;
+    /* Ensure content can scroll properly */
+    max-height: none;
+  }
+  
+  /* Ensure body and html allow scrolling */
+  html, body {
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Fix main container to allow scrolling */
+  .mobile-main-container {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    height: auto;
+    min-height: 100vh;
   }
 }
 
