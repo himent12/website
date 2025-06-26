@@ -133,6 +133,124 @@ const DesktopReadingMode = () => {
     };
   }, [viewMode]);
 
+  // Page mode pagination logic - fixed to prevent text skipping
+  useEffect(() => {
+    if (viewMode !== 'page') return;
+    
+    const pagesArray = [];
+    
+    // First page: Title and document info only
+    pagesArray.push('TITLE_PAGE');
+    
+    // Combine all text content
+    const fullText = paragraphs.join('\n\n');
+    const charactersPerPage = 2000; // Larger for desktop screens
+    
+    // Fixed pagination algorithm to prevent text skipping
+    let currentIndex = 0;
+    
+    while (currentIndex < fullText.length) {
+      let endIndex = Math.min(currentIndex + charactersPerPage, fullText.length);
+      
+      // Only adjust for word boundaries if we're not at the end
+      if (endIndex < fullText.length) {
+        // Look for the last space within the last 150 characters to avoid cutting words
+        const searchStart = Math.max(endIndex - 150, currentIndex);
+        const lastSpace = fullText.lastIndexOf(' ', endIndex);
+        
+        if (lastSpace > searchStart) {
+          endIndex = lastSpace;
+        }
+      }
+      
+      const pageContent = fullText.substring(currentIndex, endIndex).trim();
+      
+      if (pageContent.length > 0) {
+        pagesArray.push(pageContent);
+      }
+      
+      // CRITICAL FIX: Use the actual endIndex instead of fixed increment
+      // This prevents text skipping when word boundaries are adjusted
+      currentIndex = endIndex;
+      
+      // Safety check to prevent infinite loops
+      if (currentIndex === endIndex && endIndex < fullText.length) {
+        // If no progress is made, move forward by at least one character
+        currentIndex++;
+      }
+    }
+    
+    setPages(pagesArray);
+    setTotalPages(pagesArray.length);
+    
+    // Update progress based on current page
+    const pageProgress = pagesArray.length > 0 ? ((currentPage - 1) / (pagesArray.length - 1)) * 100 : 0;
+    setReadingProgress(pageProgress);
+  }, [viewMode, paragraphs, currentPage]);
+
+  // Touch gesture handling for page mode (desktop with touch support)
+  useEffect(() => {
+    if (viewMode !== 'page') return;
+    
+    let touchStartX = 0;
+    let touchEndX = 0;
+    
+    const handleTouchStart = (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    };
+    
+    const handleTouchMove = (e) => {
+      // Prevent scrolling in page mode
+      e.preventDefault();
+    };
+    
+    const handleTouchEnd = (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    };
+    
+    const handleSwipe = () => {
+      const swipeThreshold = 50;
+      const swipeDistance = touchStartX - touchEndX;
+      
+      if (Math.abs(swipeDistance) > swipeThreshold) {
+        if (swipeDistance > 0 && currentPage < totalPages) {
+          // Swipe left - next page
+          setCurrentPage(prev => prev + 1);
+        } else if (swipeDistance < 0 && currentPage > 1) {
+          // Swipe right - previous page
+          setCurrentPage(prev => prev - 1);
+        }
+      }
+    };
+    
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
+    
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [viewMode, currentPage, totalPages]);
+
+  // Keyboard navigation for page mode
+  useEffect(() => {
+    if (viewMode !== 'page') return;
+    
+    const handleKeyDown = (e) => {
+      if (e.key === 'ArrowLeft' && currentPage > 1) {
+        setCurrentPage(prev => prev - 1);
+      } else if (e.key === 'ArrowRight' && currentPage < totalPages) {
+        setCurrentPage(prev => prev + 1);
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [viewMode, currentPage, totalPages]);
+
   // Inactivity timer to show controls after 45 seconds
   useEffect(() => {
     if (inactivityTimerRef.current) {
@@ -325,72 +443,182 @@ const DesktopReadingMode = () => {
         </div>
       </div>
 
-      {/* Main Reading Content - Desktop Scroll Mode */}
-      <div className="pt-20 pb-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          {/* Document Header */}
-          <div className={`mb-8 p-6 rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border} backdrop-blur-sm`}>
-            <h1 className={`text-2xl sm:text-3xl font-bold mb-4 ${currentTheme.text}`}>
-              {originalTitle}
-            </h1>
-            <div className={`flex flex-wrap items-center gap-2 text-sm ${currentTheme.secondaryText}`}>
-              <span>Translated from Chinese</span>
-              <span>•</span>
-              <span>{paragraphs.length} paragraphs</span>
-              <span>•</span>
-              <span>~{Math.ceil(translatedText.split(' ').length / 200)} min read</span>
+      {/* Main Reading Content - Dual Mode Support */}
+      <div className={viewMode === 'page' ? "pt-0 pb-0 px-0 h-screen flex flex-col" : "pt-20 pb-16"}>
+        <div className={viewMode === 'page' ? "max-w-none mx-0 h-full flex flex-col" : "max-w-4xl mx-auto px-4 sm:px-6"}>
+          {/* Document Header - Only show in scroll mode */}
+          {viewMode === 'scroll' && (
+            <div className={`mb-8 p-6 rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border} backdrop-blur-sm`}>
+              <h1 className={`text-2xl sm:text-3xl font-bold mb-4 ${currentTheme.text}`}>
+                {originalTitle}
+              </h1>
+              <div className={`flex flex-wrap items-center gap-2 text-sm ${currentTheme.secondaryText}`}>
+                <span>Translated from Chinese</span>
+                <span>•</span>
+                <span>{paragraphs.length} paragraphs</span>
+                <span>•</span>
+                <span>~{Math.ceil(translatedText.split(' ').length / 200)} min read</span>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Reading Content */}
-          <article
-            ref={contentRef}
-            className={`${currentTheme.contentBg} ${currentTheme.shadow} rounded-2xl border ${currentTheme.border} overflow-hidden backdrop-blur-sm`}
-            style={{
-              maxWidth: `${maxWidth}px`,
-              margin: '0 auto'
-            }}
-          >
-            <div className="p-8 sm:p-12">
-              {paragraphs.map((paragraph, index) => (
-                <p
-                  key={index}
-                  className={`mb-8 ${currentTheme.text} ${fontOptions.find(f => f.value === fontFamily)?.class || 'font-lora'} leading-relaxed`}
-                  style={{
-                    fontSize: `${fontSize}px`,
-                    lineHeight: lineHeight,
-                    textAlign: 'justify',
-                    textJustify: 'inter-word',
-                    wordBreak: 'normal',
-                    hyphens: 'auto'
-                  }}
-                  dangerouslySetInnerHTML={{
-                    __html: formatText(paragraph)
-                  }}
-                />
-              ))}
-            </div>
-          </article>
+          {/* Scroll Mode Content */}
+          {viewMode === 'scroll' && (
+            <>
+              <article
+                ref={contentRef}
+                className={`${currentTheme.contentBg} ${currentTheme.shadow} rounded-2xl border ${currentTheme.border} overflow-hidden backdrop-blur-sm`}
+                style={{
+                  maxWidth: `${maxWidth}px`,
+                  margin: '0 auto'
+                }}
+              >
+                <div className="p-8 sm:p-12">
+                  {paragraphs.map((paragraph, index) => (
+                    <p
+                      key={index}
+                      className={`mb-8 ${currentTheme.text} ${fontOptions.find(f => f.value === fontFamily)?.class || 'font-lora'} leading-relaxed`}
+                      style={{
+                        fontSize: `${fontSize}px`,
+                        lineHeight: lineHeight,
+                        textAlign: 'justify',
+                        textJustify: 'inter-word',
+                        wordBreak: 'normal',
+                        hyphens: 'auto'
+                      }}
+                      dangerouslySetInnerHTML={{
+                        __html: formatText(paragraph)
+                      }}
+                    />
+                  ))}
+                </div>
+              </article>
 
-          {/* End of Document */}
-          <div className={`mt-12 text-center p-8 rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border} backdrop-blur-sm`}>
-            <div className={`text-lg font-medium mb-6 ${currentTheme.text}`}>
-              End of Document
-            </div>
-            <p className={`mb-6 ${currentTheme.secondaryText}`}>
-              Thank you for reading! Would you like to translate another document?
-            </p>
-            <button
-              onClick={() => navigate('/')}
-              className={`px-8 py-3 rounded-full font-medium transition-all transform hover:scale-105 ${
-                readingMode === 'night'
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                  : 'bg-amber-600 hover:bg-amber-700 text-white'
-              } shadow-lg`}
-            >
-              Translate Another Document
-            </button>
-          </div>
+              {/* End of Document - Scroll Mode */}
+              <div className={`mt-12 text-center p-8 rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border} backdrop-blur-sm`}>
+                <div className={`text-lg font-medium mb-6 ${currentTheme.text}`}>
+                  End of Document
+                </div>
+                <p className={`mb-6 ${currentTheme.secondaryText}`}>
+                  Thank you for reading! Would you like to translate another document?
+                </p>
+                <button
+                  onClick={() => navigate('/')}
+                  className={`px-8 py-3 rounded-full font-medium transition-all transform hover:scale-105 ${
+                    readingMode === 'night'
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                      : 'bg-amber-600 hover:bg-amber-700 text-white'
+                  } shadow-lg`}
+                >
+                  Translate Another Document
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Page Mode Content */}
+          {viewMode === 'page' && (
+            <>
+              <div className={`${currentTheme.contentBg} h-full w-full flex flex-col`}>
+                <div className="p-8 sm:p-12 flex-1" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                  {pages.length > 0 && (
+                    <div
+                      className={`${currentTheme.text} ${fontOptions.find(f => f.value === fontFamily)?.class || 'font-lora'} leading-relaxed flex-1`}
+                      style={{
+                        fontSize: `${fontSize}px`,
+                        lineHeight: lineHeight,
+                        textAlign: 'justify',
+                        textJustify: 'inter-word',
+                        wordBreak: 'normal',
+                        hyphens: 'auto',
+                        overflow: 'hidden',
+                        whiteSpace: 'pre-wrap'
+                      }}
+                    >
+                      {currentPage === 1 ? (
+                        // Title page content
+                        <div className="flex flex-col justify-center items-center h-full text-center">
+                          <h1 className={`text-4xl sm:text-5xl font-bold mb-8 ${currentTheme.text}`}>
+                            {originalTitle}
+                          </h1>
+                          <div className={`text-xl ${currentTheme.secondaryText} space-y-3`}>
+                            <p>Translated from Chinese</p>
+                            <p>{pages.length - 1} pages</p>
+                            <p>~{Math.ceil(translatedText.split(' ').length / 200)} min read</p>
+                          </div>
+                        </div>
+                      ) : (
+                        // Content pages
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html: formatText(pages[currentPage - 1] || '')
+                          }}
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Page Navigation */}
+                <div className={`flex items-center justify-between p-6 border-t ${currentTheme.border}`}>
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage <= 1}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                      currentPage <= 1
+                        ? 'opacity-50 cursor-not-allowed'
+                        : `${currentTheme.buttonHover} hover:scale-105`
+                    }`}
+                    title="Previous Page"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    <span className="hidden sm:inline">Previous</span>
+                  </button>
+
+                  <div className={`text-lg font-medium ${currentTheme.secondaryText}`}>
+                    Page {currentPage} of {totalPages}
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage >= totalPages}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                      currentPage >= totalPages
+                        ? 'opacity-50 cursor-not-allowed'
+                        : `${currentTheme.buttonHover} hover:scale-105`
+                    }`}
+                    title="Next Page"
+                  >
+                    <span className="hidden sm:inline">Next</span>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* End of Document - Page Mode */}
+              {currentPage === totalPages && (
+                <div className={`absolute bottom-4 left-1/2 transform -translate-x-1/2 text-center p-4 mx-8 rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border} backdrop-blur-sm`}>
+                  <div className={`text-sm font-medium mb-2 ${currentTheme.text}`}>
+                    End of Document
+                  </div>
+                  <button
+                    onClick={() => navigate('/')}
+                    className={`px-6 py-2 text-sm rounded-full font-medium transition-all transform hover:scale-105 ${
+                      readingMode === 'night'
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                        : 'bg-amber-600 hover:bg-amber-700 text-white'
+                    } shadow-lg`}
+                  >
+                    Translate Another
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
 
@@ -412,17 +640,50 @@ const DesktopReadingMode = () => {
               </div>
 
               <div className="space-y-6">
+                {/* View Mode Toggle */}
+                <div>
+                  <label className={`block text-sm font-medium mb-3 ${currentTheme.text}`}>View Mode</label>
+                  <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                    <button
+                      onClick={() => setViewMode('scroll')}
+                      className={`flex-1 flex items-center justify-center py-2 px-3 rounded-md text-sm font-medium transition-all ${
+                        viewMode === 'scroll'
+                          ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                      </svg>
+                      Scroll
+                    </button>
+                    <button
+                      onClick={() => setViewMode('page')}
+                      className={`flex-1 flex items-center justify-center py-2 px-3 rounded-md text-sm font-medium transition-all ${
+                        viewMode === 'page'
+                          ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Page
+                    </button>
+                  </div>
+                </div>
+
                 {/* Reading Mode */}
                 <div>
-                  <label className={`block text-sm font-medium mb-3 ${currentTheme.text}`}>Reading Mode</label>
+                  <label className={`block text-sm font-medium mb-3 ${currentTheme.text}`}>Theme</label>
                   <div className="grid grid-cols-3 gap-2">
                     {Object.entries(themes).map(([mode, theme]) => (
                       <button
                         key={mode}
                         onClick={() => setReadingMode(mode)}
                         className={`p-3 rounded-lg border-2 transition-all ${
-                          readingMode === mode 
-                            ? `${theme.border} ${theme.bg}` 
+                          readingMode === mode
+                            ? `${theme.border} ${theme.bg}`
                             : `border-transparent ${currentTheme.buttonHover}`
                         }`}
                       >

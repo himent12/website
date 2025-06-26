@@ -123,7 +123,7 @@ const MobileReadingMode = () => {
   }, [viewMode]);
 
 
-  // Page mode pagination logic - character-based to prevent text skipping
+  // Page mode pagination logic - fixed to prevent text skipping
   useEffect(() => {
     if (viewMode !== 'page') return;
     
@@ -136,17 +136,11 @@ const MobileReadingMode = () => {
     const fullText = paragraphs.join('\n\n');
     const charactersPerPage = 1200; // Adjust based on mobile screen size
     
-    console.log('🔍 PAGINATION DEBUG: Starting pagination');
-    console.log('📝 Full text length:', fullText.length);
-    console.log('📄 Characters per page:', charactersPerPage);
-    
-    // Simple character-based pagination to prevent text skipping
+    // Fixed pagination algorithm to prevent text skipping
     let currentIndex = 0;
-    let pageNumber = 1;
     
     while (currentIndex < fullText.length) {
       let endIndex = Math.min(currentIndex + charactersPerPage, fullText.length);
-      const originalEndIndex = endIndex;
       
       // Only adjust for word boundaries if we're not at the end
       if (endIndex < fullText.length) {
@@ -161,27 +155,20 @@ const MobileReadingMode = () => {
       
       const pageContent = fullText.substring(currentIndex, endIndex).trim();
       
-      console.log(`📖 Page ${pageNumber}:`);
-      console.log(`  Start: ${currentIndex}, Original End: ${originalEndIndex}, Adjusted End: ${endIndex}`);
-      console.log(`  Content length: ${pageContent.length}`);
-      console.log(`  Content preview: "${pageContent.substring(0, 50)}..."`);
-      
-      if (endIndex > currentIndex && pageContent.length > 0) {
+      if (pageContent.length > 0) {
         pagesArray.push(pageContent);
-        pageNumber++;
       }
       
-      // CRITICAL FIX: Use adjusted endIndex instead of fixed increment
+      // CRITICAL FIX: Use the actual endIndex instead of fixed increment
+      // This prevents text skipping when word boundaries are adjusted
       currentIndex = endIndex;
       
       // Safety check to prevent infinite loops
       if (currentIndex === endIndex && endIndex < fullText.length) {
-        console.warn('⚠️ PAGINATION WARNING: No progress made, forcing increment');
+        // If no progress is made, move forward by at least one character
         currentIndex++;
       }
     }
-    
-    console.log('✅ PAGINATION COMPLETE: Total pages:', pagesArray.length);
     
     setPages(pagesArray);
     setTotalPages(pagesArray.length);
