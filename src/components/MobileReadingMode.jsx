@@ -377,8 +377,8 @@ const MobileReadingMode = () => {
       </div>
 
       {/* Main Reading Content - Dual Mode Support */}
-      <div className="pt-20 pb-16 px-4" onClick={handleScreenTap}>
-        <div className="max-w-none mx-0">
+      <div className={viewMode === 'page' ? "pt-0 pb-0 px-0" : "pt-20 pb-16 px-4"} onClick={handleScreenTap}>
+        <div className={viewMode === 'page' ? "max-w-none mx-0 h-screen flex flex-col" : "max-w-none mx-0"}>
           {/* Document Header - Only show in scroll mode */}
           {viewMode === 'scroll' && (
             <div className={`mb-6 p-6 mx-2 rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border} backdrop-blur-sm`}>
@@ -447,8 +447,8 @@ const MobileReadingMode = () => {
           {/* Page Mode Content */}
           {viewMode === 'page' && (
             <>
-              <div className={`${currentTheme.contentBg} ${currentTheme.shadow} rounded-xl mx-2 border ${currentTheme.border} overflow-hidden backdrop-blur-sm mobile-page-content`}>
-                <div className="p-6 mobile-text-container" style={{ height: '70vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <div className={`${currentTheme.contentBg} h-full w-full flex flex-col`}>
+                <div className="p-6 mobile-text-container flex-1" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                   {pages.length > 0 && (
                     <div
                       className={`${currentTheme.text} ${fontOptions.find(f => f.value === fontFamily)?.class || 'font-lora'} leading-relaxed mobile-reading-text mobile-text-selection flex-1`}
@@ -552,8 +552,14 @@ const MobileReadingMode = () => {
 
       {/* Mobile-Optimized Settings Panel */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center">
-          <div className={`w-full max-w-md ${currentTheme.controlsBg} rounded-t-3xl ${currentTheme.shadow} border-t ${currentTheme.border} overflow-y-auto max-h-[90vh] mobile-slide-up safe-area-inset-bottom`}>
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center"
+          onClick={() => setShowSettings(false)}
+        >
+          <div
+            className={`w-full max-w-md ${currentTheme.controlsBg} rounded-t-3xl ${currentTheme.shadow} border-t ${currentTheme.border} overflow-y-auto max-h-[90vh] mobile-slide-up safe-area-inset-bottom`}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className={`text-xl font-semibold ${currentTheme.text} mobile-title-text`}>Reading Settings</h3>
@@ -678,8 +684,14 @@ const MobileReadingMode = () => {
 
       {/* Mobile-Optimized Bookmarks Panel */}
       {showBookmarks && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center mobile-modal-overlay">
-          <div className={`w-full max-w-md ${currentTheme.controlsBg} rounded-t-3xl ${currentTheme.shadow} border-t ${currentTheme.border} overflow-hidden mobile-slide-up safe-area-inset-bottom`}>
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center mobile-modal-overlay"
+          onClick={() => setShowBookmarks(false)}
+        >
+          <div
+            className={`w-full max-w-md ${currentTheme.controlsBg} rounded-t-3xl ${currentTheme.shadow} border-t ${currentTheme.border} overflow-hidden mobile-slide-up safe-area-inset-bottom`}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-6 mobile-content-spacing">
               <div className="flex items-center justify-between mb-6">
                 <h3 className={`text-xl font-semibold ${currentTheme.text} mobile-title-text`}>Bookmarks</h3>
