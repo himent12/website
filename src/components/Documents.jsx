@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ReaderDemo from './ReaderDemo';
 
 const Documents = () => {
   const navigate = useNavigate();
@@ -129,6 +130,11 @@ const Documents = () => {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Reading Mode Demo */}
+        <div className="mb-8 animate-slideInUp">
+          <ReaderDemo />
         </div>
 
         {/* Enhanced Documents List */}

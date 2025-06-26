@@ -188,60 +188,71 @@ const ReadingMode = () => {
       .replace(/\n/g, '<br />');
   }, []);
 
-  // Split text into paragraphs
-  const formatTextIntoParagraphs = (text) => {
-    return text
+  // Split text into paragraphs - memoize to prevent infinite loops
+  const paragraphs = useMemo(() => {
+    return translatedText
       .split(/\n\s*\n/)
       .filter(paragraph => paragraph.trim().length > 0)
       .map(paragraph => paragraph.trim());
-  };
-
-  const paragraphs = formatTextIntoParagraphs(translatedText);
+  }, [translatedText]);
 
   // Pagination logic for page mode
   const paginateContent = useCallback(() => {
     if (!paragraphs.length || viewMode !== 'page') return;
     
-    // Simple pagination based on paragraph count and estimated screen capacity
-    const availableHeight = window.innerHeight - 200; // Account for header and padding
+    // More accurate pagination calculation to fill the entire page
+    const availableHeight = window.innerHeight - 160; // Account for header (80px) and padding (80px)
     const lineHeightPx = fontSize * lineHeight;
-    const estimatedLinesPerPage = Math.floor(availableHeight / lineHeightPx);
-    const estimatedParagraphsPerPage = Math.max(2, Math.floor(estimatedLinesPerPage / 4)); // Assume ~4 lines per paragraph
+    const paragraphMargin = 24; // mb-6 = 24px margin bottom
+    
+    // Calculate how much space the title takes on first page
+    const titleHeight = fontSize * 1.5 * 1.2 + 16 + fontSize * 0.8 * 1.2 + 32; // title + metadata + margins
     
     const newPages = [];
+    let currentPageContent = [];
+    let currentPageHeight = 0;
+    let isFirstPage = true;
     
-    // First page includes title
-    let currentPageParagraphs = [];
-    let paragraphsOnCurrentPage = 0;
-    const maxParagraphsFirstPage = Math.max(1, estimatedParagraphsPerPage - 1); // Leave room for title
+    // Add title height for first page
+    if (isFirstPage) {
+      currentPageHeight = titleHeight;
+    }
     
     for (let i = 0; i < paragraphs.length; i++) {
       const paragraph = paragraphs[i];
-      const isFirstPage = newPages.length === 0;
-      const maxParagraphsThisPage = isFirstPage ? maxParagraphsFirstPage : estimatedParagraphsPerPage;
       
-      if (paragraphsOnCurrentPage >= maxParagraphsThisPage && currentPageParagraphs.length > 0) {
-        // Create new page
+      // Estimate paragraph height more accurately
+      const words = paragraph.split(' ').length;
+      const charactersPerLine = Math.floor(maxWidth / (fontSize * 0.6)); // Approximate characters per line
+      const wordsPerLine = Math.floor(charactersPerLine / 6); // Average word length ~5 chars + space
+      const estimatedLines = Math.max(1, Math.ceil(words / wordsPerLine));
+      const paragraphHeight = (estimatedLines * lineHeightPx) + paragraphMargin;
+      
+      // Check if adding this paragraph would exceed page height
+      if (currentPageHeight + paragraphHeight > availableHeight && currentPageContent.length > 0) {
+        // Save current page and start new one
         newPages.push({
           id: newPages.length + 1,
-          content: [...currentPageParagraphs],
-          includeTitle: newPages.length === 0
+          content: [...currentPageContent],
+          includeTitle: isFirstPage
         });
         
-        currentPageParagraphs = [paragraph];
-        paragraphsOnCurrentPage = 1;
+        currentPageContent = [paragraph];
+        currentPageHeight = paragraphHeight;
+        isFirstPage = false;
       } else {
-        currentPageParagraphs.push(paragraph);
-        paragraphsOnCurrentPage++;
+        // Add paragraph to current page
+        currentPageContent.push(paragraph);
+        currentPageHeight += paragraphHeight;
       }
     }
     
     // Add the last page if it has content
-    if (currentPageParagraphs.length > 0) {
+    if (currentPageContent.length > 0) {
       newPages.push({
         id: newPages.length + 1,
-        content: currentPageParagraphs,
-        includeTitle: newPages.length === 0
+        content: currentPageContent,
+        includeTitle: isFirstPage
       });
     }
     
@@ -252,7 +263,7 @@ const ReadingMode = () => {
     if (!currentPage || currentPage < 1 || currentPage > newPages.length) {
       setCurrentPage(1);
     }
-  }, [paragraphs, fontSize, lineHeight, viewMode, currentPage]);
+  }, [paragraphs, fontSize, lineHeight, maxWidth, viewMode]);
 
   // Update pagination when relevant settings change
   useEffect(() => {
@@ -319,19 +330,27 @@ const ReadingMode = () => {
   const switchToPageMode = useCallback(() => {
     if (viewMode === 'scroll') {
       // Save current scroll position
+      const currentScrollPercent = (window.pageYOffset / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
       setScrollPosition(window.pageYOffset);
       
       setViewMode('page');
       
-      // Calculate current page based on scroll position
+      // Reset to page 1 initially, then calculate proper page after pagination
+      setCurrentPage(1);
+      
+      // Calculate current page based on scroll position after pagination completes
       setTimeout(() => {
-        paginateContent();
-        const scrollPercent = (window.pageYOffset / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
-        const targetPage = Math.max(1, Math.ceil((scrollPercent / 100) * totalPages));
-        setCurrentPage(targetPage);
-      }, 100);
+        // Re-run pagination to get updated totalPages
+        if (paragraphs.length > 0) {
+          // Use the scroll percentage to determine target page after pagination
+          const targetPage = Math.max(1, Math.ceil((currentScrollPercent / 100) * pages.length));
+          if (pages.length > 0 && targetPage <= pages.length) {
+            setCurrentPage(targetPage);
+          }
+        }
+      }, 200);
     }
-  }, [viewMode, totalPages, paginateContent]);
+  }, [viewMode, paragraphs.length, pages.length]);
 
   // Touch gesture handling for page mode
   const handleTouchStart = useCallback((e) => {
@@ -846,7 +865,7 @@ const ReadingMode = () => {
             <div className="relative w-full max-w-4xl h-full">
               {/* Page Content Container */}
               <div className="relative h-full overflow-hidden">
-                {pages.length > 0 && pages[currentPage - 1] && (
+                {pages.length > 0 && currentPage >= 1 && currentPage <= pages.length && pages[currentPage - 1] && (
                   <div
                     className={`absolute inset-0 transition-all duration-300 ease-in-out ${
                       isTransitioning ? 'opacity-0 transform translate-x-4' : 'opacity-100 transform translate-x-0'
@@ -919,40 +938,44 @@ const ReadingMode = () => {
                 )}
               </div>
               
-              {/* Page Navigation Arrows */}
-              <div className="absolute inset-y-0 left-0 flex items-center">
-                <button
-                  onClick={goToPreviousPage}
-                  disabled={currentPage <= 1}
-                  className={`p-3 rounded-full transition-all transform hover:scale-110 ${
-                    currentPage <= 1
-                      ? 'opacity-30 cursor-not-allowed'
-                      : `${currentTheme.controlsBg} ${currentTheme.shadow} border ${currentTheme.border} hover:opacity-100`
-                  }`}
-                  title="Previous Page"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-              </div>
-              
-              <div className="absolute inset-y-0 right-0 flex items-center">
-                <button
-                  onClick={goToNextPage}
-                  disabled={currentPage >= totalPages}
-                  className={`p-3 rounded-full transition-all transform hover:scale-110 ${
-                    currentPage >= totalPages
-                      ? 'opacity-30 cursor-not-allowed'
-                      : `${currentTheme.controlsBg} ${currentTheme.shadow} border ${currentTheme.border} hover:opacity-100`
-                  }`}
-                  title="Next Page"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
+              {/* Page Navigation Arrows - Only show when controls are visible */}
+              {showControls && (
+                <>
+                  <div className="absolute inset-y-0 left-0 flex items-center">
+                    <button
+                      onClick={goToPreviousPage}
+                      disabled={currentPage <= 1}
+                      className={`p-3 rounded-full transition-all transform hover:scale-110 ${
+                        currentPage <= 1
+                          ? 'opacity-30 cursor-not-allowed'
+                          : `${currentTheme.controlsBg} ${currentTheme.shadow} border ${currentTheme.border} hover:opacity-100`
+                      }`}
+                      title="Previous Page"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  <div className="absolute inset-y-0 right-0 flex items-center">
+                    <button
+                      onClick={goToNextPage}
+                      disabled={currentPage >= totalPages}
+                      className={`p-3 rounded-full transition-all transform hover:scale-110 ${
+                        currentPage >= totalPages
+                          ? 'opacity-30 cursor-not-allowed'
+                          : `${currentTheme.controlsBg} ${currentTheme.shadow} border ${currentTheme.border} hover:opacity-100`
+                      }`}
+                      title="Next Page"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
