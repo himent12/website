@@ -125,29 +125,42 @@ const MobileReadingMode = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [viewMode]);
 
-  // Page mode pagination logic
+  // Page mode pagination logic - preserve paragraph formatting
   useEffect(() => {
     if (viewMode !== 'page') return;
     
-    const wordsPerPage = 300; // Adjust based on mobile screen size
-    const words = translatedText.split(/\s+/);
-    const totalPagesCount = Math.ceil(words.length / wordsPerPage);
-    
+    const wordsPerPage = 250; // Adjust for better mobile reading
     const pagesArray = [];
-    for (let i = 0; i < totalPagesCount; i++) {
-      const startIndex = i * wordsPerPage;
-      const endIndex = Math.min(startIndex + wordsPerPage, words.length);
-      const pageWords = words.slice(startIndex, endIndex);
-      pagesArray.push(pageWords.join(' '));
+    let currentPageContent = [];
+    let currentWordCount = 0;
+    
+    // Split by paragraphs to preserve formatting
+    paragraphs.forEach((paragraph) => {
+      const paragraphWords = paragraph.split(/\s+/);
+      
+      // If adding this paragraph would exceed word limit, start new page
+      if (currentWordCount + paragraphWords.length > wordsPerPage && currentPageContent.length > 0) {
+        pagesArray.push(currentPageContent.join('\n\n'));
+        currentPageContent = [paragraph];
+        currentWordCount = paragraphWords.length;
+      } else {
+        currentPageContent.push(paragraph);
+        currentWordCount += paragraphWords.length;
+      }
+    });
+    
+    // Add the last page if it has content
+    if (currentPageContent.length > 0) {
+      pagesArray.push(currentPageContent.join('\n\n'));
     }
     
     setPages(pagesArray);
-    setTotalPages(totalPagesCount);
+    setTotalPages(pagesArray.length);
     
     // Update progress based on current page
-    const pageProgress = totalPagesCount > 0 ? ((currentPage - 1) / (totalPagesCount - 1)) * 100 : 0;
+    const pageProgress = pagesArray.length > 0 ? ((currentPage - 1) / (pagesArray.length - 1)) * 100 : 0;
     setReadingProgress(pageProgress);
-  }, [viewMode, translatedText, currentPage]);
+  }, [viewMode, paragraphs, currentPage]);
 
   // Touch gesture handling for page mode
   useEffect(() => {
@@ -207,14 +220,24 @@ const MobileReadingMode = () => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [viewMode, currentPage, totalPages]);
 
-  // Auto-hide controls timer
+  // Auto-show controls initially, then hide after activity
   useEffect(() => {
+    setShowControls(true);
+    
     const timer = setTimeout(() => {
-      setShowControls(true);
+      if (Date.now() - lastActivityTime > 3000) {
+        setShowControls(false);
+      }
     }, 3000);
 
     return () => clearTimeout(timer);
   }, [lastActivityTime]);
+
+  // Show controls on tap/touch
+  const handleScreenTap = () => {
+    setShowControls(true);
+    setLastActivityTime(Date.now());
+  };
 
   // Theme configurations optimized for mobile
   const themes = {
@@ -342,7 +365,7 @@ const MobileReadingMode = () => {
       </div>
 
       {/* Main Reading Content - Dual Mode Support */}
-      <div className="pt-20 pb-16 px-4">
+      <div className="pt-20 pb-16 px-4" onClick={handleScreenTap}>
         <div className="max-w-none mx-0">
           {/* Document Header */}
           <div className={`mb-6 p-6 mx-2 rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border} backdrop-blur-sm`}>
@@ -411,21 +434,26 @@ const MobileReadingMode = () => {
           {viewMode === 'page' && (
             <>
               <div className={`${currentTheme.contentBg} ${currentTheme.shadow} rounded-xl mx-2 border ${currentTheme.border} overflow-hidden backdrop-blur-sm mobile-page-content`}>
-                <div className="p-6 mobile-text-container" style={{ minHeight: '60vh' }}>
+                <div className="p-6 mobile-text-container" style={{ height: '70vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                   {pages.length > 0 && (
                     <div
-                      className={`${currentTheme.text} ${fontOptions.find(f => f.value === fontFamily)?.class || 'font-lora'} leading-relaxed mobile-reading-text mobile-text-selection`}
+                      className={`${currentTheme.text} ${fontOptions.find(f => f.value === fontFamily)?.class || 'font-lora'} leading-relaxed mobile-reading-text mobile-text-selection flex-1`}
                       style={{
                         fontSize: `${fontSize}px`,
                         lineHeight: Math.max(lineHeight, 1.6),
                         textAlign: 'left',
                         wordBreak: 'normal',
-                        hyphens: 'auto'
+                        hyphens: 'auto',
+                        overflow: 'hidden',
+                        whiteSpace: 'pre-wrap'
                       }}
-                      dangerouslySetInnerHTML={{
-                        __html: formatText(pages[currentPage - 1] || '')
-                      }}
-                    />
+                    >
+                      {pages[currentPage - 1]?.split('\n\n').map((paragraph, index) => (
+                        <p key={index} className="mb-4 last:mb-0">
+                          {paragraph}
+                        </p>
+                      ))}
+                    </div>
                   )}
                 </div>
 

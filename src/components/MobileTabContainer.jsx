@@ -157,24 +157,30 @@ const MobileTabContainer = () => {
       }`}>
         <div className="max-w-6xl mx-auto px-3 sm:px-4">
           <div className="flex items-center justify-between">
-            {/* Mobile Tab Navigation - Only Dots */}
-            <div className="flex items-center justify-center flex-1">
-              {/* Tab Progress Indicator - Centered Clickable Dots */}
-              <div className="flex items-center space-x-2">
-                {tabs.map((tab, index) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => selectTab(tab.id)}
-                    className={`w-4 h-4 rounded-full transition-all mobile-touch-xs ${
-                      tab.id === activeTab
-                        ? isDarkMode ? 'bg-blue-400' : 'bg-blue-500'
-                        : isDarkMode ? 'bg-gray-600 hover:bg-gray-500' : 'bg-gray-300 hover:bg-gray-400'
-                    }`}
-                    aria-label={`Switch to ${tab.name}`}
-                  />
-                ))}
-              </div>
-            </div>
+            {/* Mobile Tab Dropdown Button */}
+            <button
+              onClick={toggleTabMenu}
+              className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 mobile-touch-sm ${
+                isDarkMode
+                  ? 'text-gray-100 hover:bg-gray-700/50 bg-gray-800/50 shadow-lg shadow-gray-900/20'
+                  : 'text-gray-900 hover:bg-gray-100/50 bg-white/50 shadow-lg shadow-gray-200/50'
+              }`}
+            >
+              <span className="w-5 h-5 flex-shrink-0">
+                {currentTab?.icon}
+              </span>
+              <span className="font-medium mobile-body-text">
+                {currentTab?.shortName}
+              </span>
+              <svg
+                className={`w-4 h-4 transition-transform duration-300 ${showTabMenu ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
             
             {/* Dark Mode Toggle */}
             <button
