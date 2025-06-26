@@ -125,6 +125,42 @@ const MobileReadingMode = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [viewMode]);
 
+  // Touch handling for scroll mode
+  useEffect(() => {
+    if (viewMode !== 'scroll') return;
+    
+    let touchStartTime = 0;
+    let hasMoved = false;
+    
+    const handleTouchStart = (e) => {
+      touchStartTime = Date.now();
+      hasMoved = false;
+    };
+    
+    const handleTouchMove = () => {
+      hasMoved = true;
+    };
+    
+    const handleTouchEnd = (e) => {
+      const touchDuration = Date.now() - touchStartTime;
+      
+      // Only handle tap if it was quick and didn't move (not a scroll)
+      if (!hasMoved && touchDuration < 300) {
+        handleScreenTap(e);
+      }
+    };
+    
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
+    
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [viewMode]);
+
   // Page mode pagination logic - character-based to prevent text skipping
   useEffect(() => {
     if (viewMode !== 'page') return;
@@ -138,61 +174,25 @@ const MobileReadingMode = () => {
     const fullText = paragraphs.join('\n\n');
     const charactersPerPage = 1200; // Adjust based on mobile screen size
     
-    // Split text into pages with improved word boundary detection
-    let currentPosition = 0;
-    
-    while (currentPosition < fullText.length) {
-      let endPosition = Math.min(currentPosition + charactersPerPage, fullText.length);
+    // Simple character-based pagination to prevent text skipping
+    for (let i = 0; i < fullText.length; i += charactersPerPage) {
+      let endIndex = Math.min(i + charactersPerPage, fullText.length);
       
-      // If we're not at the end, find the best break point
-      if (endPosition < fullText.length) {
-        // Look for natural break points within the last 300 characters
-        const searchStart = Math.max(endPosition - 300, currentPosition);
-        const searchText = fullText.substring(searchStart, endPosition + 100);
+      // Only adjust for word boundaries if we're not at the end
+      if (endIndex < fullText.length) {
+        // Look for the last space within the last 100 characters to avoid cutting words
+        const searchStart = Math.max(endIndex - 100, i);
+        const lastSpace = fullText.lastIndexOf(' ', endIndex);
         
-        // Find different types of break points
-        const sentenceEnd = searchText.lastIndexOf('. ');
-        const paragraphEnd = searchText.lastIndexOf('\n\n');
-        const lineEnd = searchText.lastIndexOf('\n');
-        const wordBoundary = searchText.lastIndexOf(' ');
-        
-        // Choose the best break point (prioritize paragraph > sentence > line > word)
-        let bestBreak = -1;
-        if (paragraphEnd > -1 && paragraphEnd > searchText.length - 250) {
-          bestBreak = paragraphEnd + 2; // Include paragraph break
-        } else if (sentenceEnd > -1 && sentenceEnd > searchText.length - 200) {
-          bestBreak = sentenceEnd + 2; // Include period and space
-        } else if (lineEnd > -1 && lineEnd > searchText.length - 150) {
-          bestBreak = lineEnd + 1; // Include line break
-        } else if (wordBoundary > -1 && wordBoundary > searchText.length - 100) {
-          bestBreak = wordBoundary + 1; // Include space
-        }
-        
-        if (bestBreak > -1) {
-          endPosition = searchStart + bestBreak;
-        } else {
-          // Fallback: find any space within reasonable distance
-          const fallbackSpace = fullText.lastIndexOf(' ', endPosition);
-          if (fallbackSpace > currentPosition + charactersPerPage * 0.7) {
-            endPosition = fallbackSpace + 1;
-          }
+        if (lastSpace > searchStart) {
+          endIndex = lastSpace;
         }
       }
       
-      // Ensure we don't go backwards or stay in the same position
-      if (endPosition <= currentPosition) {
-        endPosition = Math.min(currentPosition + charactersPerPage, fullText.length);
-      }
-      
-      const pageContent = fullText.substring(currentPosition, endPosition).trim();
+      const pageContent = fullText.substring(i, endIndex).trim();
       if (pageContent.length > 0) {
         pagesArray.push(pageContent);
       }
-      
-      currentPosition = endPosition;
-      
-      // Safety check to prevent infinite loops
-      if (currentPosition >= fullText.length) break;
     }
     
     setPages(pagesArray);
@@ -209,23 +209,32 @@ const MobileReadingMode = () => {
     
     let touchStartX = 0;
     let touchEndX = 0;
-    let touchStartY = 0;
-    let touchEndY = 0;
+    let touchStartTime = 0;
+    let hasMoved = false;
     
     const handleTouchStart = (e) => {
       touchStartX = e.changedTouches[0].screenX;
-      touchStartY = e.changedTouches[0].screenY;
+      touchStartTime = Date.now();
+      hasMoved = false;
     };
     
     const handleTouchMove = (e) => {
       // Prevent scrolling in page mode
       e.preventDefault();
+      hasMoved = true;
     };
     
     const handleTouchEnd = (e) => {
       touchEndX = e.changedTouches[0].screenX;
-      touchEndY = e.changedTouches[0].screenY;
-      handleSwipe();
+      const touchDuration = Date.now() - touchStartTime;
+      
+      // Only handle swipe if there was significant movement
+      if (hasMoved) {
+        handleSwipe();
+      } else if (touchDuration < 300) {
+        // Handle tap only if it was quick and didn't move
+        handleScreenTap(e);
+      }
     };
     
     const handleSwipe = () => {
@@ -285,12 +294,27 @@ const MobileReadingMode = () => {
     return () => clearTimeout(timer);
   }, [lastActivityTime]);
 
-  // Show controls on tap/touch and hide menus
-  const handleScreenTap = () => {
-    setShowControls(true);
-    setShowSettings(false);
-    setShowBookmarks(false);
-    setLastActivityTime(Date.now());
+  // Show/hide controls only on center screen tap (not swipes)
+  const handleScreenTap = (e) => {
+    // Only handle taps in the center area of the screen
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    const centerX = screenWidth / 2;
+    const centerY = screenHeight / 2;
+    const tapRadius = Math.min(screenWidth, screenHeight) * 0.3; // 30% of smaller dimension
+    
+    const tapX = e.clientX || (e.touches && e.touches[0]?.clientX) || 0;
+    const tapY = e.clientY || (e.touches && e.touches[0]?.clientY) || 0;
+    
+    const distance = Math.sqrt(Math.pow(tapX - centerX, 2) + Math.pow(tapY - centerY, 2));
+    
+    // Only toggle controls if tap is in center area
+    if (distance <= tapRadius) {
+      setShowControls(prev => !prev);
+      setShowSettings(false);
+      setShowBookmarks(false);
+      setLastActivityTime(Date.now());
+    }
   };
 
   // Theme configurations optimized for mobile
@@ -419,7 +443,7 @@ const MobileReadingMode = () => {
       </div>
 
       {/* Main Reading Content - Dual Mode Support */}
-      <div className={viewMode === 'page' ? "pt-0 pb-0 px-0" : "pt-20 pb-16 px-4"} onClick={handleScreenTap}>
+      <div className={viewMode === 'page' ? "pt-0 pb-0 px-0" : "pt-20 pb-16 px-4"}>
         <div className={viewMode === 'page' ? "max-w-none mx-0 h-screen flex flex-col" : "max-w-none mx-0"}>
           {/* Document Header - Only show in scroll mode */}
           {viewMode === 'scroll' && (
