@@ -817,15 +817,15 @@ const ReadingMode = () => {
 
       {/* Main Reading Content */}
       {viewMode === 'scroll' ? (
-        // Scroll Mode Content - Mobile Full-Screen Optimized
-        <div className={`pt-20 pb-16 ${isMobile ? 'mobile-full-screen-scroll' : ''}`}>
-          <div className={`${isMobile ? 'mobile-edge-to-edge' : 'max-w-4xl mx-auto px-4 sm:px-6'}`}>
-            {/* Document Header - Mobile Optimized */}
-            <div className={`${isMobile ? 'mb-4 p-3 mx-1' : 'mb-8 p-6'} rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border}`}>
-              <h1 className={`${isMobile ? 'text-xl' : 'text-2xl sm:text-3xl'} font-bold ${isMobile ? 'mb-2' : 'mb-4'} ${currentTheme.text}`}>
+        // Scroll Mode Content - Mobile Full-Screen with Beautiful Styling
+        <div className={`pt-20 pb-16 ${isMobile ? 'px-2' : ''}`}>
+          <div className={`${isMobile ? 'max-w-none mx-0' : 'max-w-4xl mx-auto px-4 sm:px-6'}`}>
+            {/* Document Header - Mobile Optimized with Beautiful Styling */}
+            <div className={`${isMobile ? 'mb-6 p-4 mx-2' : 'mb-8 p-6'} rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border} backdrop-blur-sm`}>
+              <h1 className={`${isMobile ? 'text-xl' : 'text-2xl sm:text-3xl'} font-bold ${isMobile ? 'mb-3' : 'mb-4'} ${currentTheme.text}`}>
                 {originalTitle}
               </h1>
-              <div className={`flex flex-wrap items-center gap-2 ${isMobile ? 'text-xs' : 'text-sm'} ${currentTheme.secondaryText}`}>
+              <div className={`flex flex-wrap items-center gap-2 ${isMobile ? 'text-sm' : 'text-sm'} ${currentTheme.secondaryText}`}>
                 <span>Translated from Chinese</span>
                 <span>•</span>
                 <span>{paragraphs.length} paragraphs</span>
@@ -834,28 +834,27 @@ const ReadingMode = () => {
               </div>
             </div>
 
-            {/* Reading Content - Mobile Full-Width */}
+            {/* Reading Content - Mobile Full-Width with Beautiful Styling */}
             <article
               ref={contentRef}
-              className={`${currentTheme.contentBg} ${currentTheme.shadow} ${isMobile ? 'rounded-lg mx-1' : 'rounded-2xl'} border ${currentTheme.border} overflow-hidden`}
+              className={`${currentTheme.contentBg} ${currentTheme.shadow} ${isMobile ? 'rounded-xl mx-2' : 'rounded-2xl'} border ${currentTheme.border} overflow-hidden backdrop-blur-sm`}
               style={{
                 maxWidth: isMobile ? 'none' : `${maxWidth}px`,
-                margin: isMobile ? '0' : '0 auto',
-                width: isMobile ? 'calc(100% - 8px)' : 'auto'
+                margin: isMobile ? '0 8px' : '0 auto'
               }}
             >
-              <div className={`${isMobile ? 'p-3 mobile-reading-padding' : 'p-8 sm:p-12'}`}>
+              <div className={`${isMobile ? 'p-6' : 'p-8 sm:p-12'}`}>
                 {paragraphs.map((paragraph, index) => (
                   <p
                     key={index}
-                    className={`${isMobile ? 'mb-4' : 'mb-8'} ${currentTheme.text} ${fontOptions.find(f => f.value === fontFamily)?.class || 'font-lora'} mobile-reading-text`}
+                    className={`${isMobile ? 'mb-6' : 'mb-8'} ${currentTheme.text} ${fontOptions.find(f => f.value === fontFamily)?.class || 'font-lora'} leading-relaxed`}
                     style={{
-                      fontSize: `${isMobile ? Math.max(fontSize - 1, 14) : fontSize}px`,
-                      lineHeight: isMobile ? Math.max(lineHeight - 0.1, 1.5) : lineHeight,
+                      fontSize: `${isMobile ? fontSize : fontSize}px`,
+                      lineHeight: isMobile ? Math.max(lineHeight, 1.6) : lineHeight,
                       textAlign: isMobile ? 'left' : 'justify',
                       textJustify: isMobile ? 'auto' : 'inter-word',
-                      wordBreak: isMobile ? 'break-word' : 'normal',
-                      hyphens: isMobile ? 'auto' : 'none'
+                      wordBreak: 'normal',
+                      hyphens: 'auto'
                     }}
                     dangerouslySetInnerHTML={{
                       __html: formatText(paragraph)
@@ -865,17 +864,17 @@ const ReadingMode = () => {
               </div>
             </article>
 
-            {/* End of Document - Mobile Optimized */}
-            <div className={`${isMobile ? 'mt-6 text-center p-4 mx-1' : 'mt-12 text-center p-8'} rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border}`}>
-              <div className={`${isMobile ? 'text-base' : 'text-lg'} font-medium ${isMobile ? 'mb-2' : 'mb-4'} ${currentTheme.text}`}>
+            {/* End of Document - Mobile Optimized with Beautiful Styling */}
+            <div className={`${isMobile ? 'mt-8 text-center p-6 mx-2' : 'mt-12 text-center p-8'} rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border} backdrop-blur-sm`}>
+              <div className={`${isMobile ? 'text-lg' : 'text-lg'} font-medium ${isMobile ? 'mb-3' : 'mb-4'} ${currentTheme.text}`}>
                 End of Document
               </div>
-              <p className={`${isMobile ? 'mb-4 text-sm' : 'mb-6'} ${currentTheme.secondaryText}`}>
+              <p className={`${isMobile ? 'mb-5 text-sm' : 'mb-6'} ${currentTheme.secondaryText}`}>
                 Thank you for reading! Would you like to translate another document?
               </p>
               <button
                 onClick={() => navigate('/')}
-                className={`${isMobile ? 'px-6 py-2 text-sm' : 'px-8 py-3'} rounded-full font-medium transition-all transform hover:scale-105 ${
+                className={`${isMobile ? 'px-8 py-3 text-sm' : 'px-8 py-3'} rounded-full font-medium transition-all transform hover:scale-105 ${
                   readingMode === 'night'
                     ? 'bg-blue-600 hover:bg-blue-700 text-white'
                     : 'bg-amber-600 hover:bg-amber-700 text-white'
@@ -887,23 +886,23 @@ const ReadingMode = () => {
           </div>
         </div>
       ) : (
-        // Page Mode Content - Mobile Full-Screen Optimized
+        // Page Mode Content - Mobile Full-Screen with Beautiful Styling
         <div
-          className={`fixed inset-0 overflow-hidden ${isMobile ? 'mobile-content-container mobile-full-screen-page' : ''}`}
+          className={`fixed inset-0 overflow-hidden ${isMobile ? 'mobile-content-container' : ''}`}
           style={{
-            paddingTop: isMobile ? '60px' : '80px',
-            paddingBottom: isMobile ? '8px' : '64px',
-            paddingLeft: isMobile ? '4px' : '16px',
-            paddingRight: isMobile ? '4px' : '16px'
+            paddingTop: isMobile ? '70px' : '80px',
+            paddingBottom: isMobile ? '16px' : '64px',
+            paddingLeft: isMobile ? '8px' : '16px',
+            paddingRight: isMobile ? '8px' : '16px'
           }}
           ref={pageContainerRef}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          <div className={`h-full flex items-stretch justify-center ${isMobile ? 'mobile-page-wrapper' : 'px-4 sm:px-6'}`}>
+          <div className={`h-full flex items-stretch justify-center ${isMobile ? '' : 'px-4 sm:px-6'}`}>
             <div className="relative w-full h-full" style={{ maxWidth: isMobile ? '100%' : '1024px' }}>
-              {/* Page Content Container - Full Screen Mobile */}
-              <div className={`relative h-full overflow-hidden ${isMobile ? 'mobile-page-content mobile-edge-to-edge-page' : ''}`}>
+              {/* Page Content Container - Full Screen Mobile with Beautiful Styling */}
+              <div className={`relative h-full overflow-hidden`}>
                 {pages.length > 0 && currentPage >= 1 && currentPage <= pages.length && pages[currentPage - 1] && (
                   <div
                     className={`absolute inset-0 transition-all duration-300 ease-in-out ${
@@ -911,22 +910,21 @@ const ReadingMode = () => {
                     }`}
                   >
                     <article
-                      className={`h-full ${currentTheme.contentBg} ${currentTheme.shadow} ${isMobile ? 'mobile-page-article' : 'rounded-2xl'} border ${currentTheme.border} overflow-hidden`}
+                      className={`h-full ${currentTheme.contentBg} ${currentTheme.shadow} ${isMobile ? 'rounded-xl' : 'rounded-2xl'} border ${currentTheme.border} overflow-hidden backdrop-blur-sm`}
                       style={{
                         maxWidth: '100%',
                         margin: '0',
-                        height: '100%',
-                        borderRadius: isMobile ? '8px' : '16px'
+                        height: '100%'
                       }}
                     >
-                      <div className={`h-full flex flex-col ${isMobile ? 'mobile-page-inner' : 'p-8 sm:p-12'}`}>
-                        {/* Page Header - Mobile Full-Screen Optimized */}
+                      <div className={`h-full flex flex-col ${isMobile ? 'p-4' : 'p-8 sm:p-12'}`}>
+                        {/* Page Header - Mobile Full-Screen with Beautiful Styling */}
                         {pages[currentPage - 1]?.includeTitle && (
-                          <div className={`${isMobile ? 'mb-3 px-3 pt-3' : 'mb-8'} flex-shrink-0`}>
-                            <h1 className={`${isMobile ? 'text-lg' : 'text-2xl sm:text-3xl'} font-bold ${isMobile ? 'mb-1' : 'mb-4'} ${currentTheme.text}`}>
+                          <div className={`${isMobile ? 'mb-4' : 'mb-8'} flex-shrink-0`}>
+                            <h1 className={`${isMobile ? 'text-xl' : 'text-2xl sm:text-3xl'} font-bold ${isMobile ? 'mb-2' : 'mb-4'} ${currentTheme.text}`}>
                               {originalTitle}
                             </h1>
-                            <div className={`flex flex-wrap items-center gap-1 ${isMobile ? 'text-xs' : 'text-sm'} ${currentTheme.secondaryText} ${isMobile ? 'mb-2' : 'mb-8'}`}>
+                            <div className={`flex flex-wrap items-center gap-2 ${isMobile ? 'text-sm' : 'text-sm'} ${currentTheme.secondaryText} ${isMobile ? 'mb-4' : 'mb-8'}`}>
                               <span>Translated from Chinese</span>
                               <span>•</span>
                               <span>{paragraphs.length} paragraphs</span>
@@ -936,22 +934,20 @@ const ReadingMode = () => {
                           </div>
                         )}
                         
-                        {/* Page Content - Mobile Full-Screen Reading */}
-                        <div className={`flex-1 overflow-y-auto ${isMobile ? 'mobile-text-container mobile-full-width-text px-3' : ''} scrollbar-hide`} style={{ minHeight: 0 }}>
-                          <div className={`${isMobile ? 'pb-2' : 'pb-8'}`}>
+                        {/* Page Content - Mobile Full-Screen Reading with Beautiful Typography */}
+                        <div className={`flex-1 overflow-y-auto scrollbar-hide`} style={{ minHeight: 0 }}>
+                          <div className={`${isMobile ? 'pb-4' : 'pb-8'}`}>
                             {pages[currentPage - 1]?.content.map((paragraph, index) => (
                               <p
                                 key={`${currentPage}-${index}`}
-                                className={`${isMobile ? 'mb-3' : 'mb-6'} ${currentTheme.text} ${fontOptions.find(f => f.value === fontFamily)?.class || 'font-lora'} mobile-reading-text`}
+                                className={`${isMobile ? 'mb-5' : 'mb-6'} ${currentTheme.text} ${fontOptions.find(f => f.value === fontFamily)?.class || 'font-lora'} leading-relaxed`}
                                 style={{
-                                  fontSize: `${isMobile ? Math.max(fontSize - 1, 14) : fontSize}px`,
-                                  lineHeight: isMobile ? Math.max(lineHeight - 0.05, 1.5) : lineHeight,
+                                  fontSize: `${isMobile ? fontSize : fontSize}px`,
+                                  lineHeight: isMobile ? Math.max(lineHeight, 1.6) : lineHeight,
                                   textAlign: isMobile ? 'left' : 'justify',
                                   textJustify: isMobile ? 'auto' : 'inter-word',
-                                  wordBreak: isMobile ? 'break-word' : 'normal',
-                                  hyphens: isMobile ? 'auto' : 'none',
-                                  marginLeft: 0,
-                                  marginRight: 0
+                                  wordBreak: 'normal',
+                                  hyphens: 'auto'
                                 }}
                                 dangerouslySetInnerHTML={{
                                   __html: formatText(paragraph)
@@ -961,18 +957,18 @@ const ReadingMode = () => {
                           </div>
                         </div>
                         
-                        {/* End of Document on Last Page - Mobile Optimized */}
+                        {/* End of Document on Last Page - Mobile Optimized with Beautiful Styling */}
                         {currentPage === totalPages && (
-                          <div className={`${isMobile ? 'mt-3 px-3 pb-3' : 'mt-8'} text-center flex-shrink-0`}>
-                            <div className={`${isMobile ? 'text-sm' : 'text-lg'} font-medium ${isMobile ? 'mb-1' : 'mb-4'} ${currentTheme.text}`}>
+                          <div className={`${isMobile ? 'mt-4' : 'mt-8'} text-center flex-shrink-0`}>
+                            <div className={`${isMobile ? 'text-lg' : 'text-lg'} font-medium ${isMobile ? 'mb-2' : 'mb-4'} ${currentTheme.text}`}>
                               End of Document
                             </div>
-                            <p className={`${isMobile ? 'mb-3 text-xs' : 'mb-6'} ${currentTheme.secondaryText}`}>
+                            <p className={`${isMobile ? 'mb-4 text-sm' : 'mb-6'} ${currentTheme.secondaryText}`}>
                               Thank you for reading! Would you like to translate another document?
                             </p>
                             <button
                               onClick={() => navigate('/')}
-                              className={`${isMobile ? 'px-4 py-2 text-xs' : 'px-8 py-3'} rounded-full font-medium transition-all transform hover:scale-105 ${
+                              className={`${isMobile ? 'px-6 py-3 text-sm' : 'px-8 py-3'} rounded-full font-medium transition-all transform hover:scale-105 ${
                                 readingMode === 'night'
                                   ? 'bg-blue-600 hover:bg-blue-700 text-white'
                                   : 'bg-amber-600 hover:bg-amber-700 text-white'

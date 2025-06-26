@@ -317,70 +317,8 @@ html {
   }
 }
 
-/* Mobile Full-Screen Reading Enhancements */
+/* Mobile Full-Screen Reading Enhancements with Beautiful Styling */
 @media (max-width: 768px) {
-  /* Full-screen scroll mode optimizations */
-  .mobile-full-screen-scroll {
-    padding-left: 0;
-    padding-right: 0;
-  }
-  
-  .mobile-edge-to-edge {
-    max-width: none !important;
-    margin: 0 !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-  }
-  
-  /* Mobile reading padding for optimal text flow */
-  .mobile-reading-padding {
-    padding: 12px 8px !important;
-  }
-  
-  /* Full-width text optimization */
-  .mobile-reading-text {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    width: 100% !important;
-    max-width: none !important;
-  }
-  
-  /* Page mode full-screen optimizations */
-  .mobile-full-screen-page {
-    padding: 0 !important;
-  }
-  
-  .mobile-page-wrapper {
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-  
-  .mobile-edge-to-edge-page {
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-  
-  .mobile-page-article {
-    border-radius: 8px !important;
-    margin: 0 !important;
-    width: 100% !important;
-    max-width: none !important;
-  }
-  
-  .mobile-page-inner {
-    padding: 8px 0 8px 0 !important;
-  }
-  
-  .mobile-full-width-text {
-    width: 100% !important;
-    max-width: none !important;
-    margin: 0 !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-  }
-  
   /* Enhanced touch targets for mobile reading */
   .touch-target {
     min-height: 44px;
@@ -388,7 +326,7 @@ html {
     touch-action: manipulation;
   }
   
-  /* Optimized typography for edge-to-edge reading */
+  /* Beautiful typography optimizations for mobile reading */
   .mobile-reading-text {
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -398,14 +336,8 @@ html {
     hyphens: auto;
     -webkit-hyphens: auto;
     -moz-hyphens: auto;
-  }
-  
-  /* Prevent text selection on UI elements during reading */
-  .mobile-page-content {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
+    letter-spacing: 0.01em;
+    word-spacing: 0.02em;
   }
   
   /* Allow text selection only on reading content */
@@ -416,34 +348,129 @@ html {
     user-select: text;
   }
   
-  /* Improved scrolling performance */
+  /* Improved scrolling performance with smooth experience */
   .mobile-text-container {
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
     overscroll-behavior: contain;
   }
   
-  /* Full-screen immersive reading experience */
-  .mobile-immersive-reading {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 1000;
-    background: inherit;
+  /* Enhanced readability with proper spacing */
+  .leading-relaxed {
+    line-height: 1.625 !important;
   }
   
-  /* Optimized line spacing for mobile reading */
-  .mobile-reading-text p {
-    margin-bottom: 0.75rem !important;
-    line-height: 1.6 !important;
+  /* Beautiful backdrop blur effects for mobile */
+  .backdrop-blur-sm {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
   
-  /* Enhanced readability for small screens */
-  .mobile-reading-text {
+  /* Mobile-optimized shadows for depth */
+  .mobile-enhanced-shadow {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                0 2px 4px -1px rgba(0, 0, 0, 0.06),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
+  
+  /* Smooth transitions for mobile interactions */
+  .mobile-smooth-transition {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Enhanced border radius for modern mobile look */
+  .mobile-modern-radius {
+    border-radius: 0.75rem; /* 12px */
+  }
+  
+  /* Beautiful gradient overlays for mobile */
+  .mobile-gradient-overlay {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  }
+  
+  /* Mobile-optimized content spacing */
+  .mobile-content-spacing {
+    padding: 1.5rem 1rem;
+  }
+  
+  /* Enhanced mobile typography hierarchy */
+  .mobile-title-text {
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+  }
+  
+  .mobile-body-text {
+    font-weight: 400;
     letter-spacing: 0.01em;
-    word-spacing: 0.05em;
+    line-height: 1.6;
+  }
+  
+  .mobile-caption-text {
+    font-weight: 500;
+    letter-spacing: 0.025em;
+    line-height: 1.4;
+  }
+  
+  /* Beautiful mobile button styling */
+  .mobile-button-enhanced {
+    background: linear-gradient(135deg, currentColor 0%, currentColor 100%);
+    box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  
+  /* Mobile-optimized focus states */
+  .mobile-focus-ring:focus {
+    outline: 2px solid rgba(59, 130, 246, 0.5);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  }
+  
+  /* Enhanced mobile card styling */
+  .mobile-card-enhanced {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Mobile dark mode enhancements */
+  .mobile-dark-card {
+    background: rgba(31, 41, 55, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(75, 85, 99, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Smooth mobile animations */
+  .mobile-fade-in {
+    animation: mobileSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  @keyframes mobileSlideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Mobile-optimized text selection */
+  .mobile-text-selection::selection {
+    background: rgba(59, 130, 246, 0.2);
+    color: inherit;
+  }
+  
+  .mobile-text-selection::-moz-selection {
+    background: rgba(59, 130, 246, 0.2);
+    color: inherit;
   }
 }
 
