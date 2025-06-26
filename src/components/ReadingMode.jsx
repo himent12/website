@@ -214,18 +214,19 @@ const ReadingMode = () => {
   const paginateContent = useCallback(() => {
     if (!paragraphs.length || viewMode !== 'page') return;
     
-    // Mobile full-screen optimized pagination calculation
-    const headerHeight = isMobile ? 60 : 80; // Reduced header height for more content
-    const paddingHeight = isMobile ? 16 : 80; // Minimal padding on mobile for maximum content space
-    const availableHeight = window.innerHeight - headerHeight - paddingHeight;
+    // More conservative pagination calculation to prevent overflow
+    const headerHeight = isMobile ? 70 : 80; // Account for controls header
+    const paddingHeight = isMobile ? 32 : 80; // More padding to prevent overflow
+    const bottomBuffer = isMobile ? 20 : 40; // Extra buffer to prevent text cutoff
+    const availableHeight = window.innerHeight - headerHeight - paddingHeight - bottomBuffer;
     
     const lineHeightPx = fontSize * lineHeight;
-    const paragraphMargin = isMobile ? 12 : 24; // Smaller margins on mobile for more content
+    const paragraphMargin = isMobile ? 16 : 24; // Slightly more margin for readability
     
-    // Mobile full-screen optimized title height calculation
-    const titleFontSize = isMobile ? fontSize * 1.1 : fontSize * 1.5; // Smaller title on mobile
+    // More conservative title height calculation
+    const titleFontSize = isMobile ? fontSize * 1.1 : fontSize * 1.5;
     const metadataFontSize = isMobile ? fontSize * 0.7 : fontSize * 0.8;
-    const titleHeight = titleFontSize * 1.2 + 8 + metadataFontSize * 1.2 + (isMobile ? 12 : 32);
+    const titleHeight = titleFontSize * 1.2 + 12 + metadataFontSize * 1.2 + (isMobile ? 20 : 32);
     
     const newPages = [];
     let currentPageContent = [];
@@ -240,14 +241,15 @@ const ReadingMode = () => {
     for (let i = 0; i < paragraphs.length; i++) {
       const paragraph = paragraphs[i];
       
-      // Mobile full-screen optimized paragraph height estimation
+      // More accurate paragraph height estimation to prevent overflow
       const words = paragraph.split(' ').length;
-      const effectiveWidth = isMobile ? window.innerWidth - 24 : maxWidth; // Full width minus minimal padding
-      const charWidth = isMobile ? fontSize * 0.5 : fontSize * 0.6; // Optimized character spacing for full-screen
+      const effectiveWidth = isMobile ? window.innerWidth - 32 : maxWidth; // Account for padding
+      const charWidth = isMobile ? fontSize * 0.55 : fontSize * 0.6; // More conservative character width
       const charactersPerLine = Math.floor(effectiveWidth / charWidth);
-      const wordsPerLine = Math.floor(charactersPerLine / 6); // Average word length ~5 chars + space
+      const wordsPerLine = Math.max(1, Math.floor(charactersPerLine / 6)); // Ensure at least 1 word per line
       const estimatedLines = Math.max(1, Math.ceil(words / wordsPerLine));
-      const paragraphHeight = (estimatedLines * lineHeightPx) + paragraphMargin;
+      // Add 20% buffer to height estimation to account for text wrapping variations
+      const paragraphHeight = Math.ceil((estimatedLines * lineHeightPx * 1.2)) + paragraphMargin;
       
       // Check if adding this paragraph would exceed page height
       if (currentPageHeight + paragraphHeight > availableHeight && currentPageContent.length > 0) {
@@ -547,7 +549,7 @@ const ReadingMode = () => {
 
 
   return (
-    <div className={`min-h-screen transition-all duration-500 ${currentTheme.bg} ${isMobile ? 'mobile-full-height mobile-viewport-fix' : ''}`}>
+    <div className={`min-h-screen transition-all duration-500 ${currentTheme.bg} ${isMobile ? 'mobile-full-height mobile-viewport-fix mobile-reading-container' : 'reading-mode-container'}`}>
       {/* Enhanced Progress Bar */}
       <div className="fixed top-0 left-0 w-full h-1 bg-black/10 z-50">
         <div
@@ -818,8 +820,8 @@ const ReadingMode = () => {
       {/* Main Reading Content */}
       {viewMode === 'scroll' ? (
         // Scroll Mode Content - Mobile Full-Screen with Beautiful Styling
-        <div className={`pt-20 pb-16 ${isMobile ? 'px-2' : ''}`}>
-          <div className={`${isMobile ? 'max-w-none mx-0' : 'max-w-4xl mx-auto px-4 sm:px-6'}`}>
+        <div className={`pt-20 pb-16 ${isMobile ? 'px-2 mobile-scroll-content mobile-theme-bg' : ''}`}>
+          <div className={`${isMobile ? 'max-w-none mx-0 mobile-theme-bg' : 'max-w-4xl mx-auto px-4 sm:px-6'}`}>
             {/* Document Header - Mobile Optimized with Beautiful Styling */}
             <div className={`${isMobile ? 'mb-6 p-4 mx-2' : 'mb-8 p-6'} rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border} backdrop-blur-sm`}>
               <h1 className={`${isMobile ? 'text-xl' : 'text-2xl sm:text-3xl'} font-bold ${isMobile ? 'mb-3' : 'mb-4'} ${currentTheme.text}`}>
@@ -843,7 +845,7 @@ const ReadingMode = () => {
                 margin: isMobile ? '0 8px' : '0 auto'
               }}
             >
-              <div className={`${isMobile ? 'p-6' : 'p-8 sm:p-12'}`}>
+              <div className={`${isMobile ? 'p-6 mobile-content-override' : 'p-8 sm:p-12'}`}>
                 {paragraphs.map((paragraph, index) => (
                   <p
                     key={index}
@@ -890,8 +892,8 @@ const ReadingMode = () => {
         <div
           className={`fixed inset-0 overflow-hidden ${isMobile ? 'mobile-content-container' : ''}`}
           style={{
-            paddingTop: isMobile ? '70px' : '80px',
-            paddingBottom: isMobile ? '16px' : '64px',
+            paddingTop: isMobile ? '80px' : '90px', // More space for controls
+            paddingBottom: isMobile ? '24px' : '64px', // More bottom padding
             paddingLeft: isMobile ? '8px' : '16px',
             paddingRight: isMobile ? '8px' : '16px'
           }}
@@ -917,7 +919,7 @@ const ReadingMode = () => {
                         height: '100%'
                       }}
                     >
-                      <div className={`h-full flex flex-col ${isMobile ? 'p-4' : 'p-8 sm:p-12'}`}>
+                      <div className={`h-full flex flex-col ${isMobile ? 'p-4' : 'p-8 sm:p-12'}`} style={{ minHeight: 0 }}>
                         {/* Page Header - Mobile Full-Screen with Beautiful Styling */}
                         {pages[currentPage - 1]?.includeTitle && (
                           <div className={`${isMobile ? 'mb-4' : 'mb-8'} flex-shrink-0`}>
@@ -935,8 +937,8 @@ const ReadingMode = () => {
                         )}
                         
                         {/* Page Content - Mobile Full-Screen Reading with Beautiful Typography */}
-                        <div className={`flex-1 overflow-y-auto scrollbar-hide`} style={{ minHeight: 0 }}>
-                          <div className={`${isMobile ? 'pb-4' : 'pb-8'}`}>
+                        <div className={`flex-1 overflow-y-hidden`} style={{ minHeight: 0 }}>
+                          <div className={`${isMobile ? 'pb-2' : 'pb-4'} h-full overflow-y-auto scrollbar-hide`}>
                             {pages[currentPage - 1]?.content.map((paragraph, index) => (
                               <p
                                 key={`${currentPage}-${index}`}

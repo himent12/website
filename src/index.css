@@ -337,3 +337,44 @@ input:focus-visible {
   .text-mobile-lg { font-size: 20px; }
   .text-mobile-xl { font-size: 24px; }
 }
+
+/* Fix for reading mode background color inheritance */
+.reading-mode-container {
+  background-color: inherit !important;
+}
+
+.reading-mode-container * {
+  background-color: inherit;
+}
+
+/* Override any conflicting white backgrounds in reading mode */
+.reading-mode-container .bg-white {
+  background-color: inherit !important;
+}
+
+.reading-mode-container .bg-white\/80 {
+  background-color: inherit !important;
+}
+
+/* Ensure theme backgrounds are properly applied in all modes */
+.theme-bg-override {
+  background-color: inherit !important;
+}
+
+/* Mobile-specific background fixes */
+@media (max-width: 768px) {
+  .mobile-reading-container {
+    background-color: inherit !important;
+  }
+  
+  .mobile-reading-container * {
+    background-color: inherit;
+  }
+  
+  /* Prevent white background override on mobile */
+  .mobile-reading-container .bg-white,
+  .mobile-reading-container .bg-white\/80,
+  .mobile-reading-container .bg-white\/95 {
+    background-color: inherit !important;
+  }
+}

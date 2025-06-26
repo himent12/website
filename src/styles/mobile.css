@@ -340,6 +340,21 @@ html {
     word-spacing: 0.02em;
   }
   
+  /* Fix background color inheritance issues in scroll mode */
+  .mobile-scroll-content {
+    background-color: inherit !important;
+  }
+  
+  /* Ensure theme backgrounds are properly applied */
+  .mobile-theme-bg {
+    background-color: inherit !important;
+  }
+  
+  /* Override any white backgrounds that interfere with themes */
+  .mobile-content-override {
+    background: transparent !important;
+  }
+  
   /* Allow text selection only on reading content */
   .mobile-reading-text {
     -webkit-user-select: text;
