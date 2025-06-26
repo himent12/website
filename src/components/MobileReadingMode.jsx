@@ -125,38 +125,43 @@ const MobileReadingMode = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [viewMode]);
 
-  // Page mode pagination logic - title on first page, content on subsequent pages
+  // Page mode pagination logic - character-based to prevent text skipping
   useEffect(() => {
     if (viewMode !== 'page') return;
     
-    const wordsPerPage = 300; // Adjust for better mobile reading
     const pagesArray = [];
     
     // First page: Title and document info only
     pagesArray.push('TITLE_PAGE');
     
-    // Subsequent pages: Content only
-    let currentPageContent = [];
-    let currentWordCount = 0;
+    // Combine all text content
+    const fullText = paragraphs.join('\n\n');
+    const charactersPerPage = 1200; // Adjust based on mobile screen size
     
-    // Split by paragraphs to preserve formatting
-    paragraphs.forEach((paragraph) => {
-      const paragraphWords = paragraph.split(/\s+/);
+    // Split text into pages by character count, preserving word boundaries
+    let currentPosition = 0;
+    
+    while (currentPosition < fullText.length) {
+      let endPosition = Math.min(currentPosition + charactersPerPage, fullText.length);
       
-      // If adding this paragraph would exceed word limit, start new page
-      if (currentWordCount + paragraphWords.length > wordsPerPage && currentPageContent.length > 0) {
-        pagesArray.push(currentPageContent.join('\n\n'));
-        currentPageContent = [paragraph];
-        currentWordCount = paragraphWords.length;
-      } else {
-        currentPageContent.push(paragraph);
-        currentWordCount += paragraphWords.length;
+      // If we're not at the end, find the last space to avoid cutting words
+      if (endPosition < fullText.length) {
+        const lastSpace = fullText.lastIndexOf(' ', endPosition);
+        const lastNewline = fullText.lastIndexOf('\n', endPosition);
+        endPosition = Math.max(lastSpace, lastNewline);
+        
+        // If no space found within reasonable distance, just cut at character limit
+        if (endPosition < currentPosition + charactersPerPage * 0.8) {
+          endPosition = currentPosition + charactersPerPage;
+        }
       }
-    });
-    
-    // Add the last page if it has content
-    if (currentPageContent.length > 0) {
-      pagesArray.push(currentPageContent.join('\n\n'));
+      
+      const pageContent = fullText.substring(currentPosition, endPosition).trim();
+      if (pageContent.length > 0) {
+        pagesArray.push(pageContent);
+      }
+      
+      currentPosition = endPosition;
     }
     
     setPages(pagesArray);
@@ -374,19 +379,21 @@ const MobileReadingMode = () => {
       {/* Main Reading Content - Dual Mode Support */}
       <div className="pt-20 pb-16 px-4" onClick={handleScreenTap}>
         <div className="max-w-none mx-0">
-          {/* Document Header */}
-          <div className={`mb-6 p-6 mx-2 rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border} backdrop-blur-sm`}>
-            <h1 className={`text-xl font-bold mb-3 ${currentTheme.text} mobile-title-text`}>
-              {originalTitle}
-            </h1>
-            <div className={`flex flex-wrap items-center gap-2 text-sm ${currentTheme.secondaryText} mobile-caption-text`}>
-              <span>Translated from Chinese</span>
-              <span>•</span>
-              <span>{viewMode === 'page' ? `${pages.length} pages` : `${paragraphs.length} paragraphs`}</span>
-              <span>•</span>
-              <span>~{Math.ceil(translatedText.split(' ').length / 200)} min read</span>
+          {/* Document Header - Only show in scroll mode */}
+          {viewMode === 'scroll' && (
+            <div className={`mb-6 p-6 mx-2 rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border} backdrop-blur-sm`}>
+              <h1 className={`text-xl font-bold mb-3 ${currentTheme.text} mobile-title-text`}>
+                {originalTitle}
+              </h1>
+              <div className={`flex flex-wrap items-center gap-2 text-sm ${currentTheme.secondaryText} mobile-caption-text`}>
+                <span>Translated from Chinese</span>
+                <span>•</span>
+                <span>{paragraphs.length} paragraphs</span>
+                <span>•</span>
+                <span>~{Math.ceil(translatedText.split(' ').length / 200)} min read</span>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Scroll Mode Content */}
           {viewMode === 'scroll' && (
