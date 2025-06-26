@@ -138,22 +138,50 @@ const MobileReadingMode = () => {
     const fullText = paragraphs.join('\n\n');
     const charactersPerPage = 1200; // Adjust based on mobile screen size
     
-    // Split text into pages by character count, preserving word boundaries
+    // Split text into pages with improved word boundary detection
     let currentPosition = 0;
     
     while (currentPosition < fullText.length) {
       let endPosition = Math.min(currentPosition + charactersPerPage, fullText.length);
       
-      // If we're not at the end, find the last space to avoid cutting words
+      // If we're not at the end, find the best break point
       if (endPosition < fullText.length) {
-        const lastSpace = fullText.lastIndexOf(' ', endPosition);
-        const lastNewline = fullText.lastIndexOf('\n', endPosition);
-        endPosition = Math.max(lastSpace, lastNewline);
+        // Look for natural break points within the last 300 characters
+        const searchStart = Math.max(endPosition - 300, currentPosition);
+        const searchText = fullText.substring(searchStart, endPosition + 100);
         
-        // If no space found within reasonable distance, just cut at character limit
-        if (endPosition < currentPosition + charactersPerPage * 0.8) {
-          endPosition = currentPosition + charactersPerPage;
+        // Find different types of break points
+        const sentenceEnd = searchText.lastIndexOf('. ');
+        const paragraphEnd = searchText.lastIndexOf('\n\n');
+        const lineEnd = searchText.lastIndexOf('\n');
+        const wordBoundary = searchText.lastIndexOf(' ');
+        
+        // Choose the best break point (prioritize paragraph > sentence > line > word)
+        let bestBreak = -1;
+        if (paragraphEnd > -1 && paragraphEnd > searchText.length - 250) {
+          bestBreak = paragraphEnd + 2; // Include paragraph break
+        } else if (sentenceEnd > -1 && sentenceEnd > searchText.length - 200) {
+          bestBreak = sentenceEnd + 2; // Include period and space
+        } else if (lineEnd > -1 && lineEnd > searchText.length - 150) {
+          bestBreak = lineEnd + 1; // Include line break
+        } else if (wordBoundary > -1 && wordBoundary > searchText.length - 100) {
+          bestBreak = wordBoundary + 1; // Include space
         }
+        
+        if (bestBreak > -1) {
+          endPosition = searchStart + bestBreak;
+        } else {
+          // Fallback: find any space within reasonable distance
+          const fallbackSpace = fullText.lastIndexOf(' ', endPosition);
+          if (fallbackSpace > currentPosition + charactersPerPage * 0.7) {
+            endPosition = fallbackSpace + 1;
+          }
+        }
+      }
+      
+      // Ensure we don't go backwards or stay in the same position
+      if (endPosition <= currentPosition) {
+        endPosition = Math.min(currentPosition + charactersPerPage, fullText.length);
       }
       
       const pageContent = fullText.substring(currentPosition, endPosition).trim();
@@ -162,6 +190,9 @@ const MobileReadingMode = () => {
       }
       
       currentPosition = endPosition;
+      
+      // Safety check to prevent infinite loops
+      if (currentPosition >= fullText.length) break;
     }
     
     setPages(pagesArray);
@@ -172,19 +203,28 @@ const MobileReadingMode = () => {
     setReadingProgress(pageProgress);
   }, [viewMode, paragraphs, currentPage]);
 
-  // Touch gesture handling for page mode
+  // Touch gesture handling for page mode with scroll prevention
   useEffect(() => {
     if (viewMode !== 'page') return;
     
     let touchStartX = 0;
     let touchEndX = 0;
+    let touchStartY = 0;
+    let touchEndY = 0;
     
     const handleTouchStart = (e) => {
       touchStartX = e.changedTouches[0].screenX;
+      touchStartY = e.changedTouches[0].screenY;
+    };
+    
+    const handleTouchMove = (e) => {
+      // Prevent scrolling in page mode
+      e.preventDefault();
     };
     
     const handleTouchEnd = (e) => {
       touchEndX = e.changedTouches[0].screenX;
+      touchEndY = e.changedTouches[0].screenY;
       handleSwipe();
     };
     
@@ -206,10 +246,12 @@ const MobileReadingMode = () => {
     };
     
     document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
     document.addEventListener('touchend', handleTouchEnd, { passive: true });
     
     return () => {
       document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleTouchEnd);
     };
   }, [viewMode, currentPage, totalPages]);
@@ -321,7 +363,7 @@ const MobileReadingMode = () => {
   };
 
   return (
-    <div className={`min-h-screen transition-all duration-500 ${currentTheme.bg}`}>
+    <div className={`min-h-screen transition-all duration-500 ${currentTheme.bg} ${viewMode === 'page' ? 'overflow-hidden touch-none' : ''}`}>
       {/* Enhanced Progress Bar */}
       <div className="fixed top-0 left-0 w-full h-1 bg-black/10 z-50 safe-area-inset-top">
         <div
@@ -476,11 +518,11 @@ const MobileReadingMode = () => {
                         </div>
                       ) : (
                         // Content pages
-                        pages[currentPage - 1]?.split('\n\n').map((paragraph, index) => (
-                          <p key={index} className="mb-4 last:mb-0">
-                            {paragraph}
-                          </p>
-                        ))
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html: formatText(pages[currentPage - 1] || '')
+                          }}
+                        />
                       )}
                     </div>
                   )}
