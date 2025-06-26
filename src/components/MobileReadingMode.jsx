@@ -125,12 +125,17 @@ const MobileReadingMode = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [viewMode]);
 
-  // Page mode pagination logic - preserve paragraph formatting
+  // Page mode pagination logic - title on first page, content on subsequent pages
   useEffect(() => {
     if (viewMode !== 'page') return;
     
-    const wordsPerPage = 250; // Adjust for better mobile reading
+    const wordsPerPage = 300; // Adjust for better mobile reading
     const pagesArray = [];
+    
+    // First page: Title and document info only
+    pagesArray.push('TITLE_PAGE');
+    
+    // Subsequent pages: Content only
     let currentPageContent = [];
     let currentWordCount = 0;
     
@@ -233,9 +238,11 @@ const MobileReadingMode = () => {
     return () => clearTimeout(timer);
   }, [lastActivityTime]);
 
-  // Show controls on tap/touch
+  // Show controls on tap/touch and hide menus
   const handleScreenTap = () => {
     setShowControls(true);
+    setShowSettings(false);
+    setShowBookmarks(false);
     setLastActivityTime(Date.now());
   };
 
@@ -448,11 +455,26 @@ const MobileReadingMode = () => {
                         whiteSpace: 'pre-wrap'
                       }}
                     >
-                      {pages[currentPage - 1]?.split('\n\n').map((paragraph, index) => (
-                        <p key={index} className="mb-4 last:mb-0">
-                          {paragraph}
-                        </p>
-                      ))}
+                      {currentPage === 1 ? (
+                        // Title page content
+                        <div className="flex flex-col justify-center items-center h-full text-center">
+                          <h1 className={`text-3xl font-bold mb-6 ${currentTheme.text}`}>
+                            {originalTitle}
+                          </h1>
+                          <div className={`text-lg ${currentTheme.secondaryText} space-y-2`}>
+                            <p>Translated from Chinese</p>
+                            <p>{pages.length - 1} pages</p>
+                            <p>~{Math.ceil(translatedText.split(' ').length / 200)} min read</p>
+                          </div>
+                        </div>
+                      ) : (
+                        // Content pages
+                        pages[currentPage - 1]?.split('\n\n').map((paragraph, index) => (
+                          <p key={index} className="mb-4 last:mb-0">
+                            {paragraph}
+                          </p>
+                        ))
+                      )}
                     </div>
                   )}
                 </div>
