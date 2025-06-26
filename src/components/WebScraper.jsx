@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saveTranslation } from '../utils/translationHistory';
 import { getUserApiKey, hasUserApiKey } from '../utils/userApiKeyManager';
+import { useMobile } from '../contexts/MobileContext';
+import { GestureHandler, TouchUtils, PerformanceUtils } from '../utils/mobileUtils';
 
 // Timer component to show elapsed translation time
 const TranslationTimer = ({ startTime }) => {
@@ -24,6 +26,7 @@ const TranslationTimer = ({ startTime }) => {
 
 const WebScraper = () => {
   const navigate = useNavigate();
+  const mobile = useMobile();
   const [url, setUrl] = useState('');
   const [scrapedData, setScrapedData] = useState(null);
   const [translatedText, setTranslatedText] = useState('');
@@ -33,6 +36,66 @@ const WebScraper = () => {
   const [selectedModel, setSelectedModel] = useState('deepseek-chat');
   const [translationStartTime, setTranslationStartTime] = useState(null);
   const [translationDuration, setTranslationDuration] = useState(null);
+
+  // Mobile-specific state
+  const [showMobileKeyboard, setShowMobileKeyboard] = useState(false);
+  const [mobileContentExpanded, setMobileContentExpanded] = useState(false);
+  const [isSwipeEnabled, setIsSwipeEnabled] = useState(true);
+  const [mobileViewMode, setMobileViewMode] = useState('compact'); // compact, expanded
+
+  // Refs for mobile optimization
+  const urlInputRef = useRef(null);
+  const containerRef = useRef(null);
+  const contentPreviewRef = useRef(null);
+  const gestureHandlerRef = useRef(null);
+
+  // Mobile-specific effects
+  useEffect(() => {
+    if (mobile.isMobile && containerRef.current) {
+      // Set up gesture handling for mobile
+      const gestureHandler = new GestureHandler(containerRef.current, {
+        threshold: 40,
+        velocity: 0.3,
+        preventScroll: false
+      });
+
+      gestureHandler.onGestureEnd = (gesture) => {
+        if (!isSwipeEnabled) return;
+        
+        if (gesture.type === 'swipe' && gesture.direction === 'right' && url && !isScrapingLoading) {
+          // Swipe right to scrape
+          handleScrape();
+          TouchUtils.hapticFeedback('medium');
+        } else if (gesture.type === 'swipe' && gesture.direction === 'left' && scrapedData && !isTranslatingLoading) {
+          // Swipe left to translate
+          handleTranslate();
+          TouchUtils.hapticFeedback('medium');
+        } else if (gesture.type === 'swipe' && gesture.direction === 'down') {
+          // Swipe down to clear
+          handleClear();
+          TouchUtils.hapticFeedback('light');
+        }
+      };
+
+      gestureHandlerRef.current = gestureHandler;
+
+      return () => {
+        gestureHandler.destroy();
+      };
+    }
+  }, [mobile.isMobile, url, scrapedData, isScrapingLoading, isTranslatingLoading, isSwipeEnabled]);
+
+  // Handle mobile keyboard visibility
+  useEffect(() => {
+    if (mobile.isMobile) {
+      setShowMobileKeyboard(mobile.isKeyboardOpen);
+    }
+  }, [mobile.isKeyboardOpen, mobile.isMobile]);
+
+  // Optimize URL input for mobile
+  const debouncedUrlChange = PerformanceUtils.debounce((value) => {
+    setUrl(value);
+  }, mobile.isLowEndDevice ? 300 : 150);
 
   const handleScrape = async () => {
     if (!url.trim()) {
@@ -245,10 +308,122 @@ const WebScraper = () => {
     }
   };
 
+  // Mobile-specific handlers
+  const handleMobileUrlFocus = () => {
+    if (mobile.isMobile && urlInputRef.current) {
+      // Scroll URL input into view on mobile
+      setTimeout(() => {
+        urlInputRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }, 300);
+    }
+  };
+
+  const handleMobileContentToggle = () => {
+    setMobileContentExpanded(!mobileContentExpanded);
+    TouchUtils.hapticFeedback('light');
+  };
+
+  const handleMobileViewModeChange = (mode) => {
+    setMobileViewMode(mode);
+    TouchUtils.hapticFeedback('light');
+  };
+
+  const handleSwipeToggle = () => {
+    setIsSwipeEnabled(!isSwipeEnabled);
+    TouchUtils.hapticFeedback('medium');
+  };
+
+  // Mobile-optimized copy function with feedback
+  const handleMobileCopyTranslation = async () => {
+    if (translatedText) {
+      try {
+        await navigator.clipboard.writeText(translatedText);
+        TouchUtils.hapticFeedback('success');
+      } catch (err) {
+        console.error('Failed to copy text:', err);
+        TouchUtils.hapticFeedback('error');
+      }
+    }
+  };
+
+  // Render mobile-specific controls
+  const renderMobileControls = () => {
+    if (!mobile.isMobile) return null;
+
+    return (
+      <div className="mobile-card p-4 mb-6 bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
+        <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
+          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+          Mobile Controls
+        </h3>
+        
+        <div className="space-y-3">
+          {/* View Mode Control */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-600">View Mode:</span>
+            <div className="flex space-x-1">
+              {['compact', 'expanded'].map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => handleMobileViewModeChange(mode)}
+                  className={`px-3 py-1 text-xs rounded-lg transition-all mobile-touch-xs ${
+                    mobileViewMode === mode
+                      ? 'bg-green-500 text-white'
+                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                  }`}
+                >
+                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Gesture Control */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-600">Swipe Gestures:</span>
+            <button
+              onClick={handleSwipeToggle}
+              className={`px-3 py-1 text-xs rounded-lg transition-all mobile-touch-xs ${
+                isSwipeEnabled
+                  ? 'bg-green-500 text-white'
+                  : 'bg-gray-300 text-gray-600'
+              }`}
+            >
+              {isSwipeEnabled ? 'Enabled' : 'Disabled'}
+            </button>
+          </div>
+
+          {/* Gesture Hints */}
+          {isSwipeEnabled && (
+            <div className="text-xs text-green-600 bg-green-50 p-2 rounded-lg">
+              <p>• Swipe right to scrape content</p>
+              <p>• Swipe left to translate</p>
+              <p>• Swipe down to clear</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
+    <div
+      ref={containerRef}
+      className={`min-h-screen transition-colors duration-300 ${
+        mobile.isMobile
+          ? 'mobile-full-height bg-gradient-to-br from-green-50 via-white to-blue-50'
+          : 'bg-gradient-to-br from-green-50 via-white to-blue-50'
+      }`}
+    >
       {/* Enhanced Mobile-First Header */}
-      <div className="text-center mobile-container mobile-safe-top py-8 sm:py-12 bg-gradient-to-r from-green-50 via-emerald-50 to-blue-50 relative overflow-hidden">
+      <div className={`text-center py-8 sm:py-12 bg-gradient-to-r from-green-50 via-emerald-50 to-blue-50 relative overflow-hidden ${
+        mobile.isMobile ? 'mobile-container safe-area-inset-top' : 'mobile-container mobile-safe-top'
+      }`}>
         {/* Background decoration */}
         <div className="absolute inset-0 bg-gradient-to-r from-green-100/20 via-emerald-100/20 to-blue-100/20"></div>
         <div className="absolute top-0 left-1/4 w-32 h-32 bg-green-200/30 rounded-full blur-3xl"></div>
@@ -271,7 +446,12 @@ const WebScraper = () => {
       </div>
 
       {/* Enhanced Mobile-First Interface */}
-      <div className="mobile-container max-w-6xl mx-auto -mt-4 relative z-10">
+      <div className={`max-w-6xl mx-auto -mt-4 relative z-10 ${
+        mobile.isMobile ? 'mobile-container mobile-content-spacing' : 'mobile-container'
+      }`}>
+
+        {/* Mobile Controls */}
+        {renderMobileControls()}
 
         {/* Enhanced URL Input Section */}
         <div className="mb-8 animate-slideInUp">
@@ -303,22 +483,37 @@ const WebScraper = () => {
                   </svg>
                 </div>
                 <input
+                  ref={urlInputRef}
                   type="url"
                   value={url}
-                  onChange={(e) => setUrl(e.target.value)}
+                  onChange={(e) => {
+                    if (mobile.isLowEndDevice) {
+                      debouncedUrlChange(e.target.value);
+                    } else {
+                      setUrl(e.target.value);
+                    }
+                  }}
+                  onFocus={handleMobileUrlFocus}
                   placeholder="Enter URL (e.g., https://www.69shuba.com/...)"
-                  className="mobile-input w-full pl-12 pr-4 py-4 text-mobile-base"
+                  className={`mobile-input w-full pl-12 pr-4 py-4 text-mobile-base transition-all duration-200 ${
+                    mobile.isMobile ? 'mobile-touch-base' : ''
+                  }`}
                   disabled={isScrapingLoading}
-                  style={{ fontSize: '16px' }} // Prevent zoom on iOS
+                  style={{
+                    fontSize: mobile.isMobile ? '16px' : undefined,
+                    touchAction: mobile.isMobile ? 'manipulation' : undefined
+                  }}
                 />
               </div>
 
               <button
                 onClick={handleScrape}
                 disabled={isScrapingLoading || !url.trim()}
-                className="mobile-button-primary w-full min-h-[56px] text-mobile-lg font-bold
-                           disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
-                           relative overflow-hidden group"
+                className={`mobile-button-primary w-full font-bold disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden group ${
+                  mobile.isMobile
+                    ? 'min-h-[52px] text-base mobile-touch-base'
+                    : 'min-h-[56px] text-mobile-lg'
+                }`}
               >
                 {/* Button background animation */}
                 <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-emerald-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -469,20 +664,61 @@ const WebScraper = () => {
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-gray-800 mb-2 text-mobile-base sm:text-lg line-clamp-2">
-                      {scrapedData.title}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 mb-3">
-                      <span className="bg-white px-2 py-1 rounded-lg">📍 {new URL(scrapedData.url).hostname}</span>
-                      <span className="bg-white px-2 py-1 rounded-lg">📊 {scrapedData.wordCount} words</span>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className={`font-bold text-gray-800 mb-2 line-clamp-2 ${
+                          mobile.isMobile ? 'text-sm' : 'text-mobile-base sm:text-lg'
+                        }`}>
+                          {scrapedData.title}
+                        </h3>
+                        <div className={`flex flex-wrap items-center gap-2 text-gray-500 mb-3 ${
+                          mobile.isMobile ? 'text-xs' : 'text-xs sm:text-sm'
+                        }`}>
+                          <span className="bg-white px-2 py-1 rounded-lg">📍 {new URL(scrapedData.url).hostname}</span>
+                          <span className="bg-white px-2 py-1 rounded-lg">📊 {scrapedData.wordCount} words</span>
+                        </div>
+                      </div>
+                      
+                      {/* Mobile expand/collapse button */}
+                      {mobile.isMobile && (
+                        <button
+                          onClick={handleMobileContentToggle}
+                          className="ml-2 p-2 text-gray-500 hover:text-gray-700 rounded-lg mobile-touch-xs"
+                        >
+                          <svg className={`w-4 h-4 transition-transform ${mobileContentExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
-                <div className="max-h-72 overflow-y-auto mobile-scroll bg-white rounded-lg p-4 border">
-                  <p className="text-mobile-base text-gray-700 leading-relaxed whitespace-pre-wrap">
+                
+                <div
+                  ref={contentPreviewRef}
+                  className={`overflow-y-auto mobile-scroll bg-white rounded-lg p-4 border transition-all duration-300 ${
+                    mobile.isMobile
+                      ? mobileContentExpanded
+                        ? 'max-h-96'
+                        : mobileViewMode === 'compact'
+                          ? 'max-h-32'
+                          : 'max-h-48'
+                      : 'max-h-72'
+                  }`}
+                >
+                  <p className={`text-gray-700 leading-relaxed whitespace-pre-wrap mobile-text-selection ${
+                    mobile.isMobile ? 'text-sm' : 'text-mobile-base'
+                  }`}>
                     {scrapedData.content}
                   </p>
                 </div>
+                
+                {/* Mobile content indicator */}
+                {mobile.isMobile && scrapedData.content.length > 500 && (
+                  <div className="mt-2 text-xs text-gray-500 text-center">
+                    {mobileContentExpanded ? 'Tap arrow to collapse' : 'Tap arrow to expand content'}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -502,8 +738,10 @@ const WebScraper = () => {
                 </h2>
                 <div className="flex items-center space-x-2 sm:space-x-3">
                   <button
-                    onClick={handleCopyTranslation}
-                    className="min-h-[48px] px-4 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all duration-200 flex items-center space-x-2 touch-manipulation hover:scale-105"
+                    onClick={mobile.isMobile ? handleMobileCopyTranslation : handleCopyTranslation}
+                    className={`min-h-[48px] px-4 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all duration-200 flex items-center space-x-2 touch-manipulation ${
+                      mobile.isMobile ? 'mobile-touch-sm' : 'hover:scale-105'
+                    }`}
                   >
                     <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -512,7 +750,9 @@ const WebScraper = () => {
                   </button>
                   <button
                     onClick={handleOpenReadingMode}
-                    className="min-h-[48px] px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white text-sm font-semibold rounded-xl transition-all duration-200 flex items-center space-x-2 touch-manipulation hover:scale-105 shadow-lg"
+                    className={`min-h-[48px] px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white text-sm font-semibold rounded-xl transition-all duration-200 flex items-center space-x-2 touch-manipulation shadow-lg ${
+                      mobile.isMobile ? 'mobile-touch-sm' : 'hover:scale-105'
+                    }`}
                   >
                     <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -524,12 +764,22 @@ const WebScraper = () => {
               </div>
 
               <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
-                <div className="max-h-96 overflow-y-auto mobile-scroll bg-white rounded-lg p-4 mb-4 border">
-                  <p className="text-mobile-base text-gray-800 leading-relaxed whitespace-pre-wrap">
+                <div className={`overflow-y-auto mobile-scroll bg-white rounded-lg p-4 mb-4 border transition-all duration-300 ${
+                  mobile.isMobile
+                    ? mobileViewMode === 'compact'
+                      ? 'max-h-48'
+                      : 'max-h-72'
+                    : 'max-h-96'
+                }`}>
+                  <p className={`text-gray-800 leading-relaxed whitespace-pre-wrap mobile-text-selection ${
+                    mobile.isMobile ? 'text-sm' : 'text-mobile-base'
+                  }`}>
                     {translatedText}
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-purple-600 font-medium">
+                <div className={`flex flex-wrap items-center gap-3 text-purple-600 font-medium ${
+                  mobile.isMobile ? 'text-xs' : 'text-xs sm:text-sm'
+                }`}>
                   <div className="flex items-center space-x-1">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                     <span>Translation completed</span>
@@ -546,6 +796,18 @@ const WebScraper = () => {
                   <span>Model: {selectedModel === 'deepseek-chat' ? 'Chat' : 'Reasoner'}</span>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Mobile-specific footer with status */}
+        {mobile.isMobile && (
+          <div className="text-center safe-area-inset-bottom pt-4 pb-6">
+            <div className="inline-flex items-center space-x-2 px-3 py-2 bg-white/50 backdrop-blur-sm rounded-full border border-gray-200">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse-slow"></div>
+              <p className="text-xs text-gray-600 font-medium">
+                Web Scraper • {mobile.deviceType} • {mobile.connectionType}
+              </p>
             </div>
           </div>
         )}

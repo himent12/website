@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saveTranslation } from '../utils/translationHistory';
+import { useMobile } from '../contexts/MobileContext';
+import { GestureHandler, TouchUtils, PerformanceUtils } from '../utils/mobileUtils';
 
 const TextTranslator = () => {
   const navigate = useNavigate();
+  const mobile = useMobile();
   const [inputText, setInputText] = useState('');
   const [outputText, setOutputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -13,6 +16,17 @@ const TextTranslator = () => {
   
   // Model selection state
   const [selectedModel, setSelectedModel] = useState('deepseek-reasoner');
+  
+  // Mobile-specific state
+  const [showMobileKeyboard, setShowMobileKeyboard] = useState(false);
+  const [mobileTextSize, setMobileTextSize] = useState('medium');
+  const [isSwipeEnabled, setIsSwipeEnabled] = useState(true);
+  
+  // Refs for mobile optimization
+  const inputTextareaRef = useRef(null);
+  const outputTextareaRef = useRef(null);
+  const containerRef = useRef(null);
+  const gestureHandlerRef = useRef(null);
 
   // Timer effect for real-time updates
   useEffect(() => {
@@ -35,16 +49,8 @@ const TextTranslator = () => {
     };
   }, [isLoading, translationStartTime]);
 
-
-  // Format elapsed time as MM:SS
-  const formatElapsedTime = (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-
-  const handleTranslate = async () => {
+  // Enhanced handleTranslate with better error handling for API connectivity
+  const handleTranslate = useCallback(async () => {
     if (!inputText.trim()) {
       setError('Please enter Chinese text to translate');
       return;
@@ -64,7 +70,10 @@ const TextTranslator = () => {
         model: selectedModel
       };
 
-      // Make API request with session credentials
+      // Make API request with session credentials and timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
       const response = await fetch('/api/translate', {
         method: 'POST',
         headers: {
@@ -73,10 +82,16 @@ const TextTranslator = () => {
         },
         credentials: 'include', // Include session cookies
         body: JSON.stringify(requestBody),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        throw new Error(`Translation failed: ${response.status}`);
+        if (response.status === 0 || !response.status) {
+          throw new Error('Network connection failed. Please check your internet connection and try again.');
+        }
+        throw new Error(`Translation failed (${response.status}): ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -89,13 +104,105 @@ const TextTranslator = () => {
         saveTranslation(inputText, translatedText);
       }
     } catch (err) {
-      setError(`Translation error: ${err.message}`);
+      let errorMessage = 'Translation error: ';
+      
+      if (err.name === 'AbortError') {
+        errorMessage += 'Request timed out. Please try again.';
+      } else if (err.message.includes('net::ERR_CONNECTION_REFUSED')) {
+        errorMessage += 'Cannot connect to translation service. Please ensure the server is running.';
+      } else if (err.message.includes('Failed to fetch')) {
+        errorMessage += 'Network error. Please check your connection and try again.';
+      } else {
+        errorMessage += err.message;
+      }
+      
+      setError(errorMessage);
       console.error('Translation error:', err);
+      
+      // Provide haptic feedback for mobile users
+      if (mobile.isMobile) {
+        TouchUtils.hapticFeedback('error');
+      }
     } finally {
       setIsLoading(false);
       setTranslationStartTime(null);
     }
+  }, [inputText, selectedModel, mobile.isMobile]);
+
+  // Mobile-specific effects
+  useEffect(() => {
+    if (mobile.isMobile && containerRef.current) {
+      // Set up gesture handling for mobile
+      const gestureHandler = new GestureHandler(containerRef.current, {
+        threshold: 30,
+        velocity: 0.2,
+        preventScroll: false
+      });
+
+      gestureHandler.onGestureEnd = (gesture) => {
+        if (!isSwipeEnabled) return;
+        
+        if (gesture.type === 'swipe' && gesture.direction === 'up' && inputText && !isLoading) {
+          // Swipe up to translate
+          handleTranslate();
+          TouchUtils.hapticFeedback('medium');
+        } else if (gesture.type === 'swipe' && gesture.direction === 'down' && (inputText || outputText)) {
+          // Swipe down to clear
+          handleClear();
+          TouchUtils.hapticFeedback('light');
+        }
+      };
+
+      gestureHandlerRef.current = gestureHandler;
+
+      return () => {
+        gestureHandler.destroy();
+      };
+    }
+  }, [mobile.isMobile, inputText, outputText, isLoading, isSwipeEnabled, handleTranslate]);
+
+  // Handle mobile keyboard visibility
+  useEffect(() => {
+    if (mobile.isMobile) {
+      setShowMobileKeyboard(mobile.isKeyboardOpen);
+    }
+  }, [mobile.isKeyboardOpen, mobile.isMobile]);
+
+  // Optimize performance for low-end devices
+  const debouncedInputChange = PerformanceUtils.debounce((value) => {
+    setInputText(value);
+  }, mobile.isLowEndDevice ? 300 : 100);
+
+  // Format elapsed time as MM:SS
+  const formatElapsedTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
+
+  // Mobile-specific handlers
+  const handleMobileInputFocus = () => {
+    if (mobile.isMobile && inputTextareaRef.current) {
+      // Scroll input into view on mobile
+      setTimeout(() => {
+        inputTextareaRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }, 300);
+    }
+  };
+
+  const handleMobileTextSizeChange = (size) => {
+    setMobileTextSize(size);
+    TouchUtils.hapticFeedback('light');
+  };
+
+  const handleSwipeToggle = () => {
+    setIsSwipeEnabled(!isSwipeEnabled);
+    TouchUtils.hapticFeedback('medium');
+  };
+
 
   const handleClear = () => {
     setInputText('');
@@ -127,10 +234,108 @@ const TextTranslator = () => {
     }
   };
 
+  // Mobile-optimized copy function with feedback
+  const handleMobileCopyOutput = async () => {
+    if (outputText) {
+      try {
+        await navigator.clipboard.writeText(outputText);
+        TouchUtils.hapticFeedback('success');
+        // Show mobile-friendly feedback
+        if (mobile.isMobile) {
+          // Could add toast notification here
+        }
+      } catch (err) {
+        console.error('Failed to copy text:', err);
+        TouchUtils.hapticFeedback('error');
+      }
+    }
+  };
+
+  // Get mobile-optimized text size class
+  const getMobileTextSizeClass = () => {
+    if (!mobile.isMobile) return 'text-base';
+    
+    switch (mobileTextSize) {
+      case 'small': return 'text-sm';
+      case 'large': return 'text-lg';
+      default: return 'text-base';
+    }
+  };
+
+  // Render mobile-specific controls
+  const renderMobileControls = () => {
+    if (!mobile.isMobile) return null;
+
+    return (
+      <div className="mobile-card p-4 mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
+          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+          Mobile Controls
+        </h3>
+        
+        <div className="space-y-3">
+          {/* Text Size Control */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-600">Text Size:</span>
+            <div className="flex space-x-1">
+              {['small', 'medium', 'large'].map((size) => (
+                <button
+                  key={size}
+                  onClick={() => handleMobileTextSizeChange(size)}
+                  className={`px-3 py-1 text-xs rounded-lg transition-all mobile-touch-xs ${
+                    mobileTextSize === size
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                  }`}
+                >
+                  {size.charAt(0).toUpperCase() + size.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Gesture Control */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-600">Swipe Gestures:</span>
+            <button
+              onClick={handleSwipeToggle}
+              className={`px-3 py-1 text-xs rounded-lg transition-all mobile-touch-xs ${
+                isSwipeEnabled
+                  ? 'bg-green-500 text-white'
+                  : 'bg-gray-300 text-gray-600'
+              }`}
+            >
+              {isSwipeEnabled ? 'Enabled' : 'Disabled'}
+            </button>
+          </div>
+
+          {/* Gesture Hints */}
+          {isSwipeEnabled && (
+            <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded-lg">
+              <p>• Swipe up to translate</p>
+              <p>• Swipe down to clear</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div
+      ref={containerRef}
+      className={`min-h-screen transition-colors duration-300 ${
+        mobile.isMobile
+          ? 'mobile-full-height bg-gradient-to-br from-blue-50 via-white to-indigo-50'
+          : 'bg-gradient-to-br from-blue-50 via-white to-indigo-50'
+      }`}
+    >
       {/* Enhanced Mobile-First Header */}
-      <div className="text-center mobile-container mobile-safe-top py-8 sm:py-12 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 relative overflow-hidden">
+      <div className={`text-center py-8 sm:py-12 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 relative overflow-hidden ${
+        mobile.isMobile ? 'mobile-container safe-area-inset-top' : 'mobile-container mobile-safe-top'
+      }`}>
         {/* Background decoration */}
         <div className="absolute inset-0 bg-gradient-to-r from-blue-100/20 via-indigo-100/20 to-purple-100/20"></div>
         <div className="absolute top-0 left-1/4 w-32 h-32 bg-blue-200/30 rounded-full blur-3xl"></div>
@@ -153,7 +358,12 @@ const TextTranslator = () => {
       </div>
 
       {/* Enhanced Mobile-First Translation Interface */}
-      <div className="mobile-container max-w-6xl mx-auto -mt-4 relative z-10">
+      <div className={`max-w-6xl mx-auto -mt-4 relative z-10 ${
+        mobile.isMobile ? 'mobile-container mobile-content-spacing' : 'mobile-container'
+      }`}>
+
+        {/* Mobile Controls */}
+        {renderMobileControls()}
 
         {/* Enhanced Input Section */}
         <div className="mb-8 animate-slideInUp">
@@ -179,14 +389,27 @@ const TextTranslator = () => {
 
             <div className="relative">
               <textarea
+                ref={inputTextareaRef}
                 value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
+                onChange={(e) => {
+                  if (mobile.isLowEndDevice) {
+                    debouncedInputChange(e.target.value);
+                  } else {
+                    setInputText(e.target.value);
+                  }
+                }}
+                onFocus={handleMobileInputFocus}
                 placeholder="Enter Chinese text to translate..."
-                className="mobile-input w-full h-52 sm:h-60 lg:h-64 p-5 sm:p-6
-                           resize-none text-mobile-base sm:text-lg leading-relaxed
-                           placeholder-gray-400 mobile-scroll"
+                className={`mobile-input w-full p-5 sm:p-6 resize-none leading-relaxed placeholder-gray-400 mobile-scroll transition-all duration-200 ${
+                  mobile.isMobile
+                    ? `h-48 ${getMobileTextSizeClass()} mobile-reading-text ${showMobileKeyboard ? 'h-32' : 'h-48'}`
+                    : 'h-52 sm:h-60 lg:h-64 text-mobile-base sm:text-lg'
+                }`}
                 disabled={isLoading}
-                style={{ fontSize: '16px' }} // Prevent zoom on iOS
+                style={{
+                  fontSize: mobile.isMobile ? '16px' : undefined,
+                  touchAction: mobile.isMobile ? 'manipulation' : undefined
+                }}
               />
               <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg text-xs sm:text-sm text-gray-500 font-medium shadow-sm">
                 {inputText.length} characters
@@ -209,8 +432,10 @@ const TextTranslator = () => {
               {outputText && (
                 <div className="flex items-center space-x-2 sm:space-x-3">
                   <button
-                    onClick={handleCopyOutput}
-                    className="min-h-[48px] px-4 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all duration-200 flex items-center space-x-2 touch-manipulation hover:scale-105"
+                    onClick={mobile.isMobile ? handleMobileCopyOutput : handleCopyOutput}
+                    className={`min-h-[48px] px-4 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all duration-200 flex items-center space-x-2 touch-manipulation ${
+                      mobile.isMobile ? 'mobile-touch-sm' : 'hover:scale-105'
+                    }`}
                   >
                     <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -219,7 +444,9 @@ const TextTranslator = () => {
                   </button>
                   <button
                     onClick={handleOpenReadingMode}
-                    className="min-h-[48px] px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-sm font-semibold rounded-xl transition-all duration-200 flex items-center space-x-2 touch-manipulation hover:scale-105 shadow-lg"
+                    className={`min-h-[48px] px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-sm font-semibold rounded-xl transition-all duration-200 flex items-center space-x-2 touch-manipulation shadow-lg ${
+                      mobile.isMobile ? 'mobile-touch-sm' : 'hover:scale-105'
+                    }`}
                   >
                     <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -233,22 +460,41 @@ const TextTranslator = () => {
 
             <div className="relative">
               <textarea
+                ref={outputTextareaRef}
                 value={outputText}
                 readOnly
                 placeholder={isLoading ? "Translating..." : "Translation will appear here..."}
-                className="mobile-input w-full h-52 sm:h-60 lg:h-64 p-5 sm:p-6
-                           resize-none bg-gray-50/80 text-mobile-base sm:text-lg leading-relaxed
-                           placeholder-gray-400 mobile-scroll"
-                style={{ fontSize: '16px' }} // Prevent zoom on iOS
+                className={`mobile-input w-full p-5 sm:p-6 resize-none bg-gray-50/80 leading-relaxed placeholder-gray-400 mobile-scroll transition-all duration-200 ${
+                  mobile.isMobile
+                    ? `h-48 ${getMobileTextSizeClass()} mobile-reading-text mobile-text-selection ${showMobileKeyboard ? 'h-32' : 'h-48'}`
+                    : 'h-52 sm:h-60 lg:h-64 text-mobile-base sm:text-lg'
+                }`}
+                style={{
+                  fontSize: mobile.isMobile ? '16px' : undefined,
+                  touchAction: mobile.isMobile ? 'manipulation' : undefined
+                }}
               />
               {isLoading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-white/95 backdrop-blur-sm rounded-xl">
                   <div className="flex flex-col items-center space-y-4 p-6 animate-scaleIn">
                     <div className="relative">
-                      <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200"></div>
-                      <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent absolute top-0 left-0"></div>
+                      <div className={`animate-spin rounded-full border-4 border-blue-200 ${
+                        mobile.isMobile ? 'h-8 w-8' : 'h-12 w-12'
+                      }`}></div>
+                      <div className={`animate-spin rounded-full border-4 border-blue-500 border-t-transparent absolute top-0 left-0 ${
+                        mobile.isMobile ? 'h-8 w-8' : 'h-12 w-12'
+                      }`}></div>
                     </div>
-                    <span className="text-gray-700 text-mobile-base font-semibold">Translating...</span>
+                    <span className={`text-gray-700 font-semibold ${
+                      mobile.isMobile ? 'text-sm' : 'text-mobile-base'
+                    }`}>
+                      Translating...
+                    </span>
+                    {mobile.isMobile && elapsedTime > 0 && (
+                      <span className="text-xs text-blue-600">
+                        {formatElapsedTime(elapsedTime)}
+                      </span>
+                    )}
                   </div>
                 </div>
               )}
@@ -354,11 +600,11 @@ const TextTranslator = () => {
           <button
             onClick={handleTranslate}
             disabled={isLoading || !inputText.trim()}
-            className="mobile-button-primary w-full sm:w-auto min-h-[60px] px-10 py-4
-                       text-mobile-lg font-bold
-                       flex items-center justify-center space-x-3
-                       disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
-                       relative overflow-hidden group"
+            className={`mobile-button-primary font-bold flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden group ${
+              mobile.isMobile
+                ? 'w-full min-h-[56px] px-8 py-3 text-base mobile-touch-base'
+                : 'w-full sm:w-auto min-h-[60px] px-10 py-4 text-mobile-lg'
+            }`}
           >
             {/* Button background animation */}
             <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -385,13 +631,24 @@ const TextTranslator = () => {
         </div>
 
         {/* Enhanced Footer */}
-        <div className="text-center mobile-safe-bottom pb-6 animate-fadeIn" style={{ animationDelay: '0.4s' }}>
+        <div className={`text-center pb-6 animate-fadeIn ${
+          mobile.isMobile ? 'safe-area-inset-bottom' : 'mobile-safe-bottom'
+        }`} style={{ animationDelay: '0.4s' }}>
           <div className="inline-flex items-center space-x-2 px-4 py-2 bg-white/50 backdrop-blur-sm rounded-full border border-gray-200">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse-slow"></div>
-            <p className="text-xs sm:text-sm text-gray-600 font-medium">
+            <p className={`text-gray-600 font-medium ${
+              mobile.isMobile ? 'text-xs' : 'text-xs sm:text-sm'
+            }`}>
               Powered by AI Translation • 由人工智能驱动
             </p>
           </div>
+          
+          {/* Mobile-specific status */}
+          {mobile.isMobile && (
+            <div className="mt-2 text-xs text-gray-500">
+              {mobile.deviceType} • {mobile.orientation} • {mobile.connectionType}
+            </div>
+          )}
         </div>
       </div>
     </div>

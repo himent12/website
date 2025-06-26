@@ -1,7 +1,23 @@
 import { useState, useEffect } from 'react';
+import { useMobile } from '../contexts/MobileContext';
 
-// Custom hook to detect mobile devices and screen sizes
+// Enhanced mobile detection hook that integrates with MobileContext
 export const useMobileDetection = () => {
+  // Use the MobileContext for comprehensive mobile state
+  const mobileContext = useMobile();
+  
+  // Return enhanced mobile detection data
+  return {
+    ...mobileContext,
+    // Legacy compatibility
+    screenSize: mobileContext.screenSize,
+    isPortrait: mobileContext.isPortrait,
+    isLandscape: mobileContext.isLandscape
+  };
+};
+
+// Backward compatibility - keep original simple hook for components that need it
+export const useSimpleMobileDetection = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const [screenSize, setScreenSize] = useState({

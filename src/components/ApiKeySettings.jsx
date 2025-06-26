@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   saveUserApiKey,
   hasUserApiKey,
@@ -7,8 +7,11 @@ import {
   clearAllApiKeys,
   migrateFromLocalStorage
 } from '../utils/userApiKeyManager';
+import { useMobile } from '../contexts/MobileContext';
+import { TouchUtils, PerformanceUtils } from '../utils/mobileUtils';
 
 const ApiKeySettings = () => {
+  const mobile = useMobile();
   const [deepseekKey, setDeepseekKey] = useState('');
   const [keyStatus, setKeyStatus] = useState('');
   const [showKey, setShowKey] = useState(false);
@@ -18,6 +21,15 @@ const ApiKeySettings = () => {
   const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [serverConnected, setServerConnected] = useState(true);
+
+  // Mobile-specific state
+  const [mobileKeyboardVisible, setMobileKeyboardVisible] = useState(false);
+  const [mobileHelpExpanded, setMobileHelpExpanded] = useState(false);
+  const [mobileSecurityExpanded, setMobileSecurityExpanded] = useState(false);
+
+  // Refs for mobile optimization
+  const keyInputRef = useRef(null);
+  const containerRef = useRef(null);
 
   const loadKeyData = useCallback(async () => {
     try {
@@ -60,6 +72,18 @@ const ApiKeySettings = () => {
     });
   }, [loadKeyData]);
 
+  // Mobile-specific effects
+  useEffect(() => {
+    if (mobile.isMobile) {
+      setMobileKeyboardVisible(mobile.isKeyboardOpen);
+    }
+  }, [mobile.isKeyboardOpen, mobile.isMobile]);
+
+  // Optimize input for mobile
+  const debouncedKeyChange = PerformanceUtils.debounce((value) => {
+    setDeepseekKey(value);
+  }, mobile.isLowEndDevice ? 300 : 150);
+
   const handleSaveKey = async () => {
     if (!deepseekKey.trim()) {
       setKeyStatus('error');
@@ -91,6 +115,49 @@ const ApiKeySettings = () => {
     setIsEditing(true);
     setDeepseekKey(''); // Always start with empty field for security
     setKeyStatus('');
+    TouchUtils.hapticFeedback('light');
+  };
+
+  // Mobile-specific handlers
+  const handleMobileKeyInputFocus = () => {
+    if (mobile.isMobile && keyInputRef.current) {
+      setTimeout(() => {
+        keyInputRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }, 300);
+    }
+  };
+
+  const handleMobileHelpToggle = () => {
+    setMobileHelpExpanded(!mobileHelpExpanded);
+    TouchUtils.hapticFeedback('light');
+  };
+
+  const handleMobileSecurityToggle = () => {
+    setMobileSecurityExpanded(!mobileSecurityExpanded);
+    TouchUtils.hapticFeedback('light');
+  };
+
+  const handleMobileShowKeyToggle = () => {
+    setShowKey(!showKey);
+    TouchUtils.hapticFeedback('medium');
+  };
+
+  const handleMobileSaveKey = async () => {
+    TouchUtils.hapticFeedback('medium');
+    await handleSaveKey();
+  };
+
+  const handleMobileDeleteKey = async () => {
+    TouchUtils.hapticFeedback('medium');
+    await handleDeleteKey();
+  };
+
+  const handleMobileClearAllKeys = async () => {
+    TouchUtils.hapticFeedback('medium');
+    await handleClearAllKeys();
   };
 
   const handleCancelEdit = () => {
@@ -148,19 +215,36 @@ const ApiKeySettings = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className={`min-h-screen bg-gray-50 flex items-center justify-center ${
+        mobile.isMobile ? 'mobile-full-height' : ''
+      }`}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading API key settings...</p>
+          <div className={`animate-spin rounded-full border-b-2 border-blue-600 mx-auto ${
+            mobile.isMobile ? 'h-8 w-8' : 'h-12 w-12'
+          }`}></div>
+          <p className={`mt-4 text-gray-600 ${
+            mobile.isMobile ? 'text-sm' : ''
+          }`}>
+            Loading API key settings...
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div
+      ref={containerRef}
+      className={`min-h-screen transition-colors duration-300 ${
+        mobile.isMobile
+          ? 'mobile-full-height bg-gradient-to-br from-blue-50 via-white to-indigo-50'
+          : 'bg-gradient-to-br from-blue-50 via-white to-indigo-50'
+      }`}
+    >
       {/* Enhanced Mobile-First Header */}
-      <div className="text-center mobile-container mobile-safe-top py-8 sm:py-12 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 relative overflow-hidden">
+      <div className={`text-center py-8 sm:py-12 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 relative overflow-hidden ${
+        mobile.isMobile ? 'mobile-container safe-area-inset-top' : 'mobile-container mobile-safe-top'
+      }`}>
         {/* Background decoration */}
         <div className="absolute inset-0 bg-gradient-to-r from-blue-100/20 via-indigo-100/20 to-purple-100/20"></div>
         <div className="absolute top-0 left-1/4 w-32 h-32 bg-blue-200/30 rounded-full blur-3xl"></div>
@@ -192,7 +276,9 @@ const ApiKeySettings = () => {
         </div>
       </div>
 
-      <div className="mobile-container max-w-4xl mx-auto -mt-4 relative z-10">
+      <div className={`max-w-4xl mx-auto -mt-4 relative z-10 ${
+        mobile.isMobile ? 'mobile-container mobile-content-spacing' : 'mobile-container'
+      }`}>
         <div className="mobile-card overflow-hidden animate-slideInUp">
 
           {/* Mobile-Optimized DeepSeek API Key Section */}
@@ -257,23 +343,33 @@ const ApiKeySettings = () => {
                   </label>
                   <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0">
                     <input
+                      ref={keyInputRef}
                       type={showKey ? "text" : "password"}
                       value={deepseekKey}
-                      onChange={(e) => setDeepseekKey(e.target.value)}
-                      className="flex-1 min-h-[48px] p-4 border border-gray-300
-                                 rounded-xl sm:rounded-l-xl sm:rounded-r-none
-                                 focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                                 font-mono text-sm sm:text-base
-                                 touch-manipulation"
+                      onChange={(e) => {
+                        if (mobile.isLowEndDevice) {
+                          debouncedKeyChange(e.target.value);
+                        } else {
+                          setDeepseekKey(e.target.value);
+                        }
+                      }}
+                      onFocus={handleMobileKeyInputFocus}
+                      className={`flex-1 p-4 border border-gray-300 rounded-xl sm:rounded-l-xl sm:rounded-r-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono touch-manipulation transition-all duration-200 ${
+                        mobile.isMobile
+                          ? `min-h-[48px] text-sm mobile-touch-base ${mobileKeyboardVisible ? 'text-base' : 'text-sm'}`
+                          : 'min-h-[48px] text-sm sm:text-base'
+                      }`}
                       placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                      style={{ fontSize: '16px' }} // Prevent zoom on iOS
+                      style={{
+                        fontSize: mobile.isMobile ? '16px' : undefined,
+                        touchAction: mobile.isMobile ? 'manipulation' : undefined
+                      }}
                     />
                     <button
-                      onClick={() => setShowKey(!showKey)}
-                      className="min-h-[48px] px-4 bg-gray-100 border border-gray-300
-                                 rounded-xl sm:rounded-l-none sm:rounded-r-xl sm:border-l-0
-                                 hover:bg-gray-200 transition-colors
-                                 touch-manipulation flex items-center justify-center"
+                      onClick={mobile.isMobile ? handleMobileShowKeyToggle : () => setShowKey(!showKey)}
+                      className={`px-4 bg-gray-100 border border-gray-300 rounded-xl sm:rounded-l-none sm:rounded-r-xl sm:border-l-0 hover:bg-gray-200 transition-colors touch-manipulation flex items-center justify-center ${
+                        mobile.isMobile ? 'min-h-[48px] mobile-touch-base' : 'min-h-[48px]'
+                      }`}
                       type="button"
                     >
                       {showKey ? (
@@ -295,13 +391,11 @@ const ApiKeySettings = () => {
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
                   <button
-                    onClick={handleSaveKey}
+                    onClick={mobile.isMobile ? handleMobileSaveKey : handleSaveKey}
                     disabled={!deepseekKey.trim() || loading}
-                    className="min-h-[48px] px-6 py-3 bg-blue-600 text-white font-medium
-                               rounded-xl hover:bg-blue-700
-                               disabled:bg-gray-300 disabled:cursor-not-allowed
-                               transition-colors touch-manipulation
-                               flex items-center justify-center"
+                    className={`px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors touch-manipulation flex items-center justify-center ${
+                      mobile.isMobile ? 'min-h-[48px] mobile-touch-base' : 'min-h-[48px]'
+                    }`}
                   >
                     {loading ? (
                       <>
@@ -317,9 +411,9 @@ const ApiKeySettings = () => {
                     <button
                       onClick={handleCancelEdit}
                       disabled={loading}
-                      className="min-h-[48px] px-6 py-3 bg-gray-200 text-gray-700 font-medium
-                                 rounded-xl hover:bg-gray-300 transition-colors touch-manipulation
-                                 flex items-center justify-center disabled:opacity-50"
+                      className={`px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-300 transition-colors touch-manipulation flex items-center justify-center disabled:opacity-50 ${
+                        mobile.isMobile ? 'min-h-[48px] mobile-touch-base' : 'min-h-[48px]'
+                      }`}
                     >
                       Cancel
                     </button>
@@ -382,18 +476,43 @@ const ApiKeySettings = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
               </div>
-              <div>
-                <h3 className="font-semibold text-yellow-800 mb-3 text-sm sm:text-base">Security & Privacy Information</h3>
-                <ul className="text-xs sm:text-sm text-yellow-700 space-y-2">
-                  <li>• Your API keys are encrypted with AES-256-GCM and stored server-side in secure sessions</li>
-                  <li>• Keys are automatically cleared when your session expires (1 hour)</li>
-                  <li>• API keys never exist on the client-side - maximum security against XSS/extensions</li>
-                  <li>• Server-side encryption with cryptographically secure session management</li>
-                  <li>• Session tokens are HTTP-only cookies protected from JavaScript access</li>
-                  <li>• Keys are stored in server memory only - no persistent disk storage</li>
-                  <li>• Translations use your session-stored keys without exposing them to the client</li>
-                  <li>• Never share your API keys with others</li>
-                </ul>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-yellow-800 text-sm sm:text-base">
+                    Security & Privacy Information
+                  </h3>
+                  {mobile.isMobile && (
+                    <button
+                      onClick={handleMobileSecurityToggle}
+                      className="ml-2 p-1 text-yellow-600 hover:text-yellow-800 mobile-touch-xs"
+                    >
+                      <svg className={`w-4 h-4 transition-transform ${mobileSecurityExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                
+                <div className={`mt-3 transition-all duration-300 ${
+                  mobile.isMobile && !mobileSecurityExpanded ? 'max-h-16 overflow-hidden' : ''
+                }`}>
+                  <ul className="text-xs sm:text-sm text-yellow-700 space-y-2">
+                    <li>• Your API keys are encrypted with AES-256-GCM and stored server-side in secure sessions</li>
+                    <li>• Keys are automatically cleared when your session expires (1 hour)</li>
+                    <li>• API keys never exist on the client-side - maximum security against XSS/extensions</li>
+                    <li>• Server-side encryption with cryptographically secure session management</li>
+                    <li>• Session tokens are HTTP-only cookies protected from JavaScript access</li>
+                    <li>• Keys are stored in server memory only - no persistent disk storage</li>
+                    <li>• Translations use your session-stored keys without exposing them to the client</li>
+                    <li>• Never share your API keys with others</li>
+                  </ul>
+                </div>
+                
+                {mobile.isMobile && !mobileSecurityExpanded && (
+                  <div className="mt-2 text-xs text-yellow-600">
+                    Tap arrow to read more security details
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -414,9 +533,9 @@ const ApiKeySettings = () => {
                   </p>
                   <button
                     onClick={() => setShowClearAllConfirm(true)}
-                    className="min-h-[44px] px-4 py-2 bg-red-600 text-white text-sm font-medium
-                               rounded-xl hover:bg-red-700 transition-colors touch-manipulation
-                               w-full sm:w-auto"
+                    className={`px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 transition-colors touch-manipulation w-full sm:w-auto ${
+                      mobile.isMobile ? 'min-h-[44px] mobile-touch-base' : 'min-h-[44px]'
+                    }`}
                   >
                     Clear All API Keys
                   </button>
@@ -444,10 +563,10 @@ const ApiKeySettings = () => {
                   Cancel
                 </button>
                 <button
-                  onClick={handleDeleteKey}
-                  className="min-h-[48px] px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700
-                             transition-colors touch-manipulation
-                             flex items-center justify-center"
+                  onClick={mobile.isMobile ? handleMobileDeleteKey : handleDeleteKey}
+                  className={`px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors touch-manipulation flex items-center justify-center ${
+                    mobile.isMobile ? 'min-h-[48px] mobile-touch-base' : 'min-h-[48px]'
+                  }`}
                 >
                   Delete Key
                 </button>
@@ -474,13 +593,26 @@ const ApiKeySettings = () => {
                   Cancel
                 </button>
                 <button
-                  onClick={handleClearAllKeys}
-                  className="min-h-[48px] px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700
-                             transition-colors touch-manipulation
-                             flex items-center justify-center"
+                  onClick={mobile.isMobile ? handleMobileClearAllKeys : handleClearAllKeys}
+                  className={`px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors touch-manipulation flex items-center justify-center ${
+                    mobile.isMobile ? 'min-h-[48px] mobile-touch-base' : 'min-h-[48px]'
+                  }`}
                 >
                   Clear All Keys
                 </button>
+                {/* Mobile-specific footer with status */}
+                {mobile.isMobile && (
+                  <div className="text-center safe-area-inset-bottom pt-4 pb-6">
+                    <div className="inline-flex items-center space-x-2 px-3 py-2 bg-white/50 backdrop-blur-sm rounded-full border border-gray-200">
+                      <div className={`w-2 h-2 rounded-full animate-pulse-slow ${
+                        !serverConnected ? 'bg-red-500' : keyMetadata ? 'bg-green-500' : 'bg-gray-400'
+                      }`}></div>
+                      <p className="text-xs text-gray-600 font-medium">
+                        API Settings • {mobile.deviceType} • {mobile.connectionType}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

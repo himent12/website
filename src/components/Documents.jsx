@@ -1,11 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReaderDemo from './ReaderDemo';
+import { useMobile } from '../contexts/MobileContext';
+import { GestureHandler, TouchUtils, PerformanceUtils } from '../utils/mobileUtils';
 
 const Documents = () => {
   const navigate = useNavigate();
+  const mobile = useMobile();
   const [documents, setDocuments] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Mobile-specific state
+  const [mobileViewMode, setMobileViewMode] = useState('grid'); // grid, list, compact
+  const [selectedDocuments, setSelectedDocuments] = useState(new Set());
+  const [sortOrder, setSortOrder] = useState('newest'); // newest, oldest, alphabetical
+  const [isSwipeEnabled, setIsSwipeEnabled] = useState(true);
+
+  // Refs for mobile optimization
+  const searchInputRef = useRef(null);
+  const containerRef = useRef(null);
+  const gestureHandlerRef = useRef(null);
 
   // Load documents from localStorage on component mount
   useEffect(() => {

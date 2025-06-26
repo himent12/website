@@ -338,3 +338,233 @@ input:focus-visible {
   .text-mobile-xl { font-size: 24px; }
 }
 
+/* ===== MOBILE INFRASTRUCTURE SUPPORT ===== */
+
+/* App container styles for mobile context */
+.app-container {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-layout {
+  --mobile-padding: 1rem;
+  --mobile-gap: 0.75rem;
+}
+
+.tablet-layout {
+  --mobile-padding: 1.5rem;
+  --mobile-gap: 1rem;
+}
+
+.desktop-layout {
+  --mobile-padding: 2rem;
+  --mobile-gap: 1.5rem;
+}
+
+/* Device-specific optimizations */
+.mobile-device {
+  font-size: 16px; /* Prevent zoom on iOS */
+}
+
+.mobile-device input,
+.mobile-device textarea,
+.mobile-device select {
+  font-size: 16px !important; /* Prevent zoom on focus */
+}
+
+.tablet-device {
+  font-size: 18px;
+}
+
+.desktop-device {
+  font-size: 16px;
+}
+
+/* Orientation-specific styles */
+.portrait-orientation .mobile-content {
+  padding: var(--mobile-padding);
+}
+
+.landscape-orientation .mobile-content {
+  padding: calc(var(--mobile-padding) * 0.75);
+}
+
+/* Keyboard state handling */
+.keyboard-active {
+  --viewport-height: calc(100vh - 250px);
+}
+
+.keyboard-closed {
+  --viewport-height: 100vh;
+}
+
+/* Reduced motion support */
+.reduced-motion *,
+.reduced-motion *::before,
+.reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Low-end device optimizations */
+.low-end-device {
+  --animation-duration: 0ms;
+  --transition-duration: 0ms;
+}
+
+.low-end-device * {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Connection-based optimizations */
+.connection-slow img {
+  loading: lazy;
+}
+
+.connection-slow video {
+  preload: none;
+}
+
+.connection-fast {
+  /* Enable advanced features for fast connections */
+}
+
+/* Touch interaction improvements */
+.using-touch *:focus {
+  outline: none;
+}
+
+.using-touch button:focus,
+.using-touch input:focus,
+.using-touch textarea:focus,
+.using-touch select:focus {
+  outline: 2px solid transparent;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* Safe area utilities */
+.safe-area-padding {
+  padding-top: max(1rem, env(safe-area-inset-top));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+.safe-area-margin {
+  margin-top: max(0px, env(safe-area-inset-top));
+  margin-bottom: max(0px, env(safe-area-inset-bottom));
+  margin-left: max(0px, env(safe-area-inset-left));
+  margin-right: max(0px, env(safe-area-inset-right));
+}
+
+/* Mobile-optimized focus management */
+.mobile-focus-ring {
+  outline: none;
+  transition: box-shadow 0.2s ease;
+}
+
+.mobile-focus-ring:focus-visible {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* Skip link for mobile accessibility */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: #000;
+  color: #fff;
+  padding: 8px;
+  text-decoration: none;
+  z-index: 1000;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+
+/* Mobile announcements for screen readers */
+.mobile-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Enhanced mobile scrolling */
+.mobile-scroll-container {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+/* Mobile-optimized images */
+.mobile-optimized img {
+  max-width: 100%;
+  height: auto;
+  loading: lazy;
+}
+
+/* Touch-friendly interactive elements */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Mobile-specific dark mode enhancements */
+.dark-mode {
+  color-scheme: dark;
+}
+
+.light-mode {
+  color-scheme: light;
+}
+
+/* Viewport height fixes for mobile browsers */
+@supports (height: 100dvh) {
+  .mobile-full-height {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+}
+
+@supports not (height: 100dvh) {
+  .mobile-full-height {
+    height: calc(var(--vh, 1vh) * 100);
+    min-height: calc(var(--vh, 1vh) * 100);
+  }
+}
+
+/* Mobile-specific print styles */
+@media print {
+  .mobile-no-print {
+    display: none !important;
+  }
+  
+  .mobile-print-only {
+    display: block !important;
+  }
+  
+  .app-container {
+    min-height: auto;
+  }
+}
+
