@@ -286,7 +286,7 @@ const MobileReadingMode = () => {
   };
 
   return (
-    <div className={`min-h-screen transition-all duration-500 ${currentTheme.bg} mobile-full-height mobile-viewport-fix`}>
+    <div className={`min-h-screen transition-all duration-500 ${currentTheme.bg}`}>
       {/* Enhanced Progress Bar */}
       <div className="fixed top-0 left-0 w-full h-1 bg-black/10 z-50 safe-area-inset-top">
         <div
@@ -495,9 +495,9 @@ const MobileReadingMode = () => {
 
       {/* Mobile-Optimized Settings Panel */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center mobile-modal-overlay">
-          <div className={`w-full max-w-md ${currentTheme.controlsBg} rounded-t-3xl ${currentTheme.shadow} border-t ${currentTheme.border} overflow-hidden mobile-slide-up safe-area-inset-bottom`}>
-            <div className="p-6 mobile-content-spacing">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center">
+          <div className={`w-full max-w-md ${currentTheme.controlsBg} rounded-t-3xl ${currentTheme.shadow} border-t ${currentTheme.border} overflow-y-auto max-h-[90vh] mobile-slide-up safe-area-inset-bottom`}>
+            <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className={`text-xl font-semibold ${currentTheme.text} mobile-title-text`}>Reading Settings</h3>
                 <button

@@ -10,6 +10,7 @@ const MobileTabContainer = () => {
   const [activeTab, setActiveTab] = useState('translation');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showTabMenu, setShowTabMenu] = useState(false);
+  const [showSwipeHint, setShowSwipeHint] = useState(true);
   const mobile = useMobile();
   const tabContainerRef = useRef(null);
   const gestureHandlerRef = useRef(null);
@@ -26,6 +27,22 @@ const MobileTabContainer = () => {
   useEffect(() => {
     localStorage.setItem('mobileTabDarkMode', JSON.stringify(isDarkMode));
   }, [isDarkMode]);
+
+  // Auto-hide swipe hint after 5 seconds permanently
+  useEffect(() => {
+    const hasSeenSwipeHint = localStorage.getItem('hasSeenSwipeHint');
+    if (hasSeenSwipeHint) {
+      setShowSwipeHint(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setShowSwipeHint(false);
+      localStorage.setItem('hasSeenSwipeHint', 'true');
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Memoize tabs array to prevent unnecessary re-renders
   const tabs = useMemo(() => [
@@ -140,40 +157,15 @@ const MobileTabContainer = () => {
       }`}>
         <div className="max-w-6xl mx-auto px-3 sm:px-4">
           <div className="flex items-center justify-between">
-            {/* Mobile Tab Navigation */}
-            <div className="flex items-center flex-1">
-              {/* Current Tab Display */}
-              <button
-                onClick={toggleTabMenu}
-                className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all mobile-touch-sm ${
-                  isDarkMode
-                    ? 'bg-gray-700/50 text-gray-100 hover:bg-gray-600/50'
-                    : 'bg-gray-100/50 text-gray-900 hover:bg-gray-200/50'
-                }`}
-              >
-                <span className="w-5 h-5 flex-shrink-0">
-                  {currentTab?.icon}
-                </span>
-                <span className="font-medium text-sm mobile-text-sm">
-                  {mobile.isMobile ? currentTab?.shortName : currentTab?.name}
-                </span>
-                <svg 
-                  className={`w-4 h-4 transition-transform ${showTabMenu ? 'rotate-180' : ''}`} 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {/* Tab Progress Indicator - Now Clickable */}
-              <div className="flex items-center ml-4 space-x-1">
+            {/* Mobile Tab Navigation - Only Dots */}
+            <div className="flex items-center justify-center flex-1">
+              {/* Tab Progress Indicator - Centered Clickable Dots */}
+              <div className="flex items-center space-x-2">
                 {tabs.map((tab, index) => (
                   <button
                     key={tab.id}
                     onClick={() => selectTab(tab.id)}
-                    className={`w-3 h-3 rounded-full transition-all mobile-touch-xs ${
+                    className={`w-4 h-4 rounded-full transition-all mobile-touch-xs ${
                       tab.id === activeTab
                         ? isDarkMode ? 'bg-blue-400' : 'bg-blue-500'
                         : isDarkMode ? 'bg-gray-600 hover:bg-gray-500' : 'bg-gray-300 hover:bg-gray-400'
@@ -283,7 +275,7 @@ const MobileTabContainer = () => {
       </div>
 
       {/* Mobile Swipe Hint */}
-      {mobile.isMobile && (
+      {mobile.isMobile && showSwipeHint && (
         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40 safe-area-inset-bottom">
           <div className={`px-4 py-2 rounded-full backdrop-blur-md ${
             isDarkMode
