@@ -118,9 +118,9 @@ const MobileReadingMode = () => {
   }, [viewMode]);
 
 
-  // BULLETPROOF PAGINATION WITH FORMATTING SUPPORT - NEVER SKIPS WORDS
-  const createPerfectPaginationWithFormatting = useCallback((text) => {
-    console.log('🔥 STARTING BULLETPROOF PAGINATION WITH FORMATTING');
+  // ABSOLUTELY FOOLPROOF PAGINATION - IMPOSSIBLE TO SKIP TEXT
+  const createAbsolutelyPerfectPagination = useCallback((text) => {
+    console.log('🔥 STARTING ABSOLUTELY FOOLPROOF PAGINATION');
     console.log('📝 Input text length:', text.length);
     
     const pages = [];
@@ -128,70 +128,108 @@ const MobileReadingMode = () => {
     // First page: Title page
     pages.push('TITLE_PAGE');
     
-    // Split text into words while preserving paragraph breaks
-    const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0);
-    console.log('📊 Total paragraphs:', paragraphs.length);
+    if (!text || text.trim().length === 0) {
+      console.log('⚠️ No text to paginate');
+      return pages;
+    }
     
-    // Target words per page for mobile (conservative to account for formatting)
-    const wordsPerPage = 150; // Reduced to account for HTML formatting overhead
+    // FOOLPROOF APPROACH: Work with individual words, never lose any
+    // Split by whitespace but preserve line breaks as special tokens
+    const tokens = text.split(/(\s+)/).filter(token => token.length > 0);
+    const words = [];
     
-    let currentPageWords = [];
-    let currentPageParagraphs = [];
-    
-    for (let paragraphIndex = 0; paragraphIndex < paragraphs.length; paragraphIndex++) {
-      const paragraph = paragraphs[paragraphIndex].trim();
-      const paragraphWords = paragraph.split(/\s+/).filter(word => word.length > 0);
-      
-      console.log(`📝 Processing paragraph ${paragraphIndex + 1} with ${paragraphWords.length} words`);
-      
-      // Check if adding this paragraph would exceed page limit
-      if (currentPageWords.length + paragraphWords.length > wordsPerPage && currentPageWords.length > 0) {
-        // Create page with current content
-        const pageContent = currentPageParagraphs.join('\n\n');
-        if (pageContent.trim().length > 0) {
-          pages.push(pageContent);
-          console.log(`📄 Page ${pages.length - 1} created with ${currentPageWords.length} words from ${currentPageParagraphs.length} paragraphs`);
+    // Convert tokens to words, preserving paragraph breaks
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      if (/^\s+$/.test(token)) {
+        // This is whitespace - check if it contains line breaks
+        if (token.includes('\n\n')) {
+          // This is a paragraph break
+          words.push('\n\n');
+        } else if (token.includes('\n')) {
+          // This is a line break
+          words.push('\n');
+        } else {
+          // This is just a space
+          words.push(' ');
         }
+      } else {
+        // This is actual text
+        words.push(token);
+      }
+    }
+    
+    console.log('📊 Total tokens to process:', words.length);
+    
+    // Conservative words per page for mobile (count only actual words, not spaces)
+    const actualWords = words.filter(word => !/^\s*$/.test(word));
+    const wordsPerPage = 120;
+    
+    let wordIndex = 0;
+    let pageNumber = 1;
+    let actualWordCount = 0;
+    
+    while (wordIndex < words.length) {
+      const pageTokens = [];
+      actualWordCount = 0;
+      
+      // Add tokens to current page until we reach the limit or run out
+      while (actualWordCount < wordsPerPage && wordIndex < words.length) {
+        const word = words[wordIndex];
+        pageTokens.push(word);
+        wordIndex++;
         
-        // Reset for next page
-        currentPageWords = [];
-        currentPageParagraphs = [];
+        // Only count actual words, not whitespace
+        if (!/^\s*$/.test(word)) {
+          actualWordCount++;
+        }
       }
       
-      // Add current paragraph to page
-      currentPageWords.push(...paragraphWords);
-      currentPageParagraphs.push(paragraph);
+      // Create page content by joining tokens
+      const pageContent = pageTokens.join('');
       
-      // If this is the last paragraph, create the final page
-      if (paragraphIndex === paragraphs.length - 1) {
-        const pageContent = currentPageParagraphs.join('\n\n');
-        if (pageContent.trim().length > 0) {
-          pages.push(pageContent);
-          console.log(`📄 Final page ${pages.length - 1} created with ${currentPageWords.length} words from ${currentPageParagraphs.length} paragraphs`);
-        }
+      if (pageContent.trim().length > 0) {
+        pages.push(pageContent);
+        console.log(`📄 Page ${pageNumber} created with ${actualWordCount} actual words`);
+        console.log(`🔤 Token range: ${wordIndex - pageTokens.length + 1} to ${wordIndex}`);
+        pageNumber++;
       }
     }
     
     console.log('✅ PAGINATION COMPLETE');
     console.log('📚 Total pages created:', pages.length);
-    console.log('🔍 Verifying no words were skipped...');
+    console.log('🔍 FOOLPROOF VERIFICATION...');
     
-    // VERIFICATION: Check that all words are included
-    const allPagesText = pages.slice(1).join('\n\n'); // Skip title page
-    const originalText = paragraphs.join('\n\n');
+    // ABSOLUTE VERIFICATION: Reconstruct all text and compare
+    const allPagesText = pages.slice(1).join(''); // Skip title page, join without separator
     
-    // Count words for verification (ignore formatting differences)
-    const originalWords = originalText.split(/\s+/).filter(word => word.length > 0);
-    const paginatedWords = allPagesText.split(/\s+/).filter(word => word.length > 0);
+    const originalWordCount = actualWords.length;
+    const paginatedActualWords = allPagesText.split(/\s+/).filter(word => word.trim().length > 0);
+    const paginatedWordCount = paginatedActualWords.length;
     
-    if (originalWords.length === paginatedWords.length && allPagesText === originalText) {
-      console.log('✅ VERIFICATION PASSED: All words and formatting preserved!');
-      console.log(`📊 Word count: ${originalWords.length} words preserved`);
+    console.log(`📊 Original words: ${originalWordCount}`);
+    console.log(`📊 Paginated words: ${paginatedWordCount}`);
+    console.log(`📊 Text length match: ${text.length === allPagesText.length}`);
+    console.log(`📊 Text exact match: ${text === allPagesText}`);
+    
+    if (originalWordCount === paginatedWordCount && text === allPagesText) {
+      console.log('✅ ABSOLUTE VERIFICATION PASSED: Every single character preserved!');
     } else {
-      console.error('❌ VERIFICATION FAILED: Content mismatch!');
-      console.log('Original words:', originalWords.length);
-      console.log('Paginated words:', paginatedWords.length);
-      console.log('Text match:', allPagesText === originalText);
+      console.error('❌ CRITICAL ERROR: Content was lost!');
+      console.log('Expected length:', text.length);
+      console.log('Got length:', allPagesText.length);
+      console.log('Expected first 100 chars:', text.substring(0, 100));
+      console.log('Got first 100 chars:', allPagesText.substring(0, 100));
+      
+      // Find the first difference
+      for (let i = 0; i < Math.min(text.length, allPagesText.length); i++) {
+        if (text[i] !== allPagesText[i]) {
+          console.log(`First difference at position ${i}:`);
+          console.log(`Expected: "${text.substring(i, i + 20)}"`);
+          console.log(`Got: "${allPagesText.substring(i, i + 20)}"`);
+          break;
+        }
+      }
     }
     
     return pages;
@@ -213,8 +251,8 @@ const MobileReadingMode = () => {
       return;
     }
     
-    // Use the new bulletproof pagination system with formatting support
-    const pagesArray = createPerfectPaginationWithFormatting(fullText);
+    // Use the absolutely foolproof pagination system
+    const pagesArray = createAbsolutelyPerfectPagination(fullText);
     
     setPages(pagesArray);
     setTotalPages(pagesArray.length);
@@ -228,7 +266,7 @@ const MobileReadingMode = () => {
       currentPage,
       progress: pageProgress
     });
-  }, [viewMode, paragraphs, currentPage, createPerfectPaginationWithFormatting]);
+  }, [viewMode, paragraphs, currentPage, createAbsolutelyPerfectPagination]);
 
   // Touch gesture handling for page mode with scroll prevention
   useEffect(() => {
