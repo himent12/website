@@ -1,6 +1,23 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
+// Mobile detection hook
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  return isMobile;
+};
+
 const ReadingMode = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -9,6 +26,7 @@ const ReadingMode = () => {
   const pageContainerRef = useRef(null);
   const touchStartRef = useRef(null);
   const touchEndRef = useRef(null);
+  const isMobile = useIsMobile();
   
   // Reading settings state
   const [readingMode, setReadingMode] = useState('day'); // day, night, sepia
@@ -196,17 +214,22 @@ const ReadingMode = () => {
       .map(paragraph => paragraph.trim());
   }, [translatedText]);
 
-  // Pagination logic for page mode
+  // Pagination logic for page mode - optimized for mobile
   const paginateContent = useCallback(() => {
     if (!paragraphs.length || viewMode !== 'page') return;
     
-    // More accurate pagination calculation to fill the entire page
-    const availableHeight = window.innerHeight - 160; // Account for header (80px) and padding (80px)
-    const lineHeightPx = fontSize * lineHeight;
-    const paragraphMargin = 24; // mb-6 = 24px margin bottom
+    // Mobile-optimized pagination calculation
+    const headerHeight = isMobile ? 70 : 80; // Smaller header on mobile
+    const paddingHeight = isMobile ? 60 : 80; // Less padding on mobile
+    const availableHeight = window.innerHeight - headerHeight - paddingHeight;
     
-    // Calculate how much space the title takes on first page
-    const titleHeight = fontSize * 1.5 * 1.2 + 16 + fontSize * 0.8 * 1.2 + 32; // title + metadata + margins
+    const lineHeightPx = fontSize * lineHeight;
+    const paragraphMargin = isMobile ? 16 : 24; // Smaller margins on mobile
+    
+    // Mobile-optimized title height calculation
+    const titleFontSize = isMobile ? fontSize * 1.3 : fontSize * 1.5;
+    const metadataFontSize = isMobile ? fontSize * 0.75 : fontSize * 0.8;
+    const titleHeight = titleFontSize * 1.2 + 12 + metadataFontSize * 1.2 + (isMobile ? 20 : 32);
     
     const newPages = [];
     let currentPageContent = [];
@@ -221,9 +244,11 @@ const ReadingMode = () => {
     for (let i = 0; i < paragraphs.length; i++) {
       const paragraph = paragraphs[i];
       
-      // Estimate paragraph height more accurately
+      // Mobile-optimized paragraph height estimation
       const words = paragraph.split(' ').length;
-      const charactersPerLine = Math.floor(maxWidth / (fontSize * 0.6)); // Approximate characters per line
+      const effectiveWidth = isMobile ? Math.min(maxWidth, window.innerWidth - 32) : maxWidth; // Account for mobile padding
+      const charWidth = isMobile ? fontSize * 0.55 : fontSize * 0.6; // Tighter character spacing on mobile
+      const charactersPerLine = Math.floor(effectiveWidth / charWidth);
       const wordsPerLine = Math.floor(charactersPerLine / 6); // Average word length ~5 chars + space
       const estimatedLines = Math.max(1, Math.ceil(words / wordsPerLine));
       const paragraphHeight = (estimatedLines * lineHeightPx) + paragraphMargin;
@@ -263,7 +288,7 @@ const ReadingMode = () => {
     if (!currentPage || currentPage < 1 || currentPage > newPages.length) {
       setCurrentPage(1);
     }
-  }, [paragraphs, fontSize, lineHeight, maxWidth, viewMode]);
+  }, [paragraphs, fontSize, lineHeight, maxWidth, viewMode, isMobile]);
 
   // Update pagination when relevant settings change
   useEffect(() => {
@@ -352,15 +377,21 @@ const ReadingMode = () => {
     }
   }, [viewMode, paragraphs.length, pages.length]);
 
-  // Touch gesture handling for page mode
+  // Enhanced touch gesture handling for page mode - optimized for mobile
   const handleTouchStart = useCallback((e) => {
     if (viewMode !== 'page') return;
+    
+    // Prevent default to avoid scrolling issues on mobile
+    if (isMobile) {
+      e.preventDefault();
+    }
+    
     touchStartRef.current = {
       x: e.touches[0].clientX,
       y: e.touches[0].clientY,
       time: Date.now()
     };
-  }, [viewMode]);
+  }, [viewMode, isMobile]);
 
   const handleTouchEnd = useCallback((e) => {
     if (viewMode !== 'page' || !touchStartRef.current) return;
@@ -375,8 +406,15 @@ const ReadingMode = () => {
     const deltaY = touchEndRef.current.y - touchStartRef.current.y;
     const deltaTime = touchEndRef.current.time - touchStartRef.current.time;
     
-    // Check if it's a swipe (not a tap)
-    if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY) && deltaTime < 300) {
+    // Mobile-optimized swipe detection
+    const minSwipeDistance = isMobile ? 30 : 50; // Lower threshold for mobile
+    const maxSwipeTime = isMobile ? 400 : 300; // Longer time allowance for mobile
+    
+    // Check if it's a horizontal swipe (not a tap or vertical scroll)
+    if (Math.abs(deltaX) > minSwipeDistance &&
+        Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && // More lenient horizontal detection
+        deltaTime < maxSwipeTime) {
+      
       if (deltaX > 0) {
         // Swipe right - previous page
         goToPreviousPage();
@@ -388,7 +426,7 @@ const ReadingMode = () => {
     
     touchStartRef.current = null;
     touchEndRef.current = null;
-  }, [viewMode, goToPreviousPage, goToNextPage]);
+  }, [viewMode, goToPreviousPage, goToNextPage, isMobile]);
 
   // Keyboard navigation for page mode
   useEffect(() => {
@@ -854,15 +892,19 @@ const ReadingMode = () => {
           </div>
         </div>
       ) : (
-        // Page Mode Content
+        // Page Mode Content - Mobile Optimized
         <div
-          className="fixed inset-0 pt-20 pb-16 overflow-hidden"
+          className="fixed inset-0 overflow-hidden"
+          style={{
+            paddingTop: isMobile ? '60px' : '80px',
+            paddingBottom: isMobile ? '40px' : '64px'
+          }}
           ref={pageContainerRef}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          <div className="h-full flex items-center justify-center px-4 sm:px-6">
-            <div className="relative w-full max-w-4xl h-full">
+          <div className={`h-full flex items-center justify-center ${isMobile ? 'px-2' : 'px-4 sm:px-6'}`}>
+            <div className="relative w-full h-full" style={{ maxWidth: isMobile ? '100%' : '1024px' }}>
               {/* Page Content Container */}
               <div className="relative h-full overflow-hidden">
                 {pages.length > 0 && currentPage >= 1 && currentPage <= pages.length && pages[currentPage - 1] && (
@@ -872,17 +914,20 @@ const ReadingMode = () => {
                     }`}
                   >
                     <article
-                      className={`h-full ${currentTheme.contentBg} ${currentTheme.shadow} rounded-2xl border ${currentTheme.border} overflow-hidden`}
-                      style={{ maxWidth: `${maxWidth}px`, margin: '0 auto' }}
+                      className={`h-full ${currentTheme.contentBg} ${currentTheme.shadow} ${isMobile ? 'rounded-lg' : 'rounded-2xl'} border ${currentTheme.border} overflow-hidden`}
+                      style={{
+                        maxWidth: isMobile ? '100%' : `${maxWidth}px`,
+                        margin: '0 auto'
+                      }}
                     >
-                      <div className="h-full p-8 sm:p-12 flex flex-col">
-                        {/* Page Header */}
+                      <div className={`h-full flex flex-col ${isMobile ? 'p-4' : 'p-8 sm:p-12'}`}>
+                        {/* Page Header - Mobile Optimized */}
                         {pages[currentPage - 1]?.includeTitle && (
-                          <div className="mb-8 flex-shrink-0">
-                            <h1 className={`text-2xl sm:text-3xl font-bold mb-4 ${currentTheme.text}`}>
+                          <div className={`${isMobile ? 'mb-4' : 'mb-8'} flex-shrink-0`}>
+                            <h1 className={`${isMobile ? 'text-xl' : 'text-2xl sm:text-3xl'} font-bold ${isMobile ? 'mb-2' : 'mb-4'} ${currentTheme.text}`}>
                               {originalTitle}
                             </h1>
-                            <div className={`flex flex-wrap items-center gap-4 text-sm ${currentTheme.secondaryText} mb-8`}>
+                            <div className={`flex flex-wrap items-center gap-2 ${isMobile ? 'text-xs' : 'text-sm'} ${currentTheme.secondaryText} ${isMobile ? 'mb-4' : 'mb-8'}`}>
                               <span>Translated from Chinese</span>
                               <span>•</span>
                               <span>{paragraphs.length} paragraphs</span>
@@ -892,17 +937,18 @@ const ReadingMode = () => {
                           </div>
                         )}
                         
-                        {/* Page Content */}
-                        <div className="flex-1">
+                        {/* Page Content - Mobile Optimized */}
+                        <div className="flex-1 overflow-hidden">
                           {pages[currentPage - 1]?.content.map((paragraph, index) => (
                             <p
                               key={`${currentPage}-${index}`}
-                              className={`mb-6 ${currentTheme.text} ${fontOptions.find(f => f.value === fontFamily)?.class || 'font-lora'}`}
+                              className={`${isMobile ? 'mb-4' : 'mb-6'} ${currentTheme.text} ${fontOptions.find(f => f.value === fontFamily)?.class || 'font-lora'}`}
                               style={{
-                                fontSize: `${fontSize}px`,
-                                lineHeight: lineHeight,
-                                textAlign: 'justify',
-                                textJustify: 'inter-word'
+                                fontSize: `${isMobile ? Math.max(fontSize - 2, 14) : fontSize}px`,
+                                lineHeight: isMobile ? Math.max(lineHeight - 0.1, 1.4) : lineHeight,
+                                textAlign: isMobile ? 'left' : 'justify',
+                                textJustify: isMobile ? 'auto' : 'inter-word',
+                                wordBreak: isMobile ? 'break-word' : 'normal'
                               }}
                               dangerouslySetInnerHTML={{
                                 __html: formatText(paragraph)
