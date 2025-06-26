@@ -316,3 +316,177 @@ html {
     height: 100dvh;
   }
 }
+
+/* Mobile Full-Screen Reading Enhancements */
+@media (max-width: 768px) {
+  /* Full-screen scroll mode optimizations */
+  .mobile-full-screen-scroll {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  
+  .mobile-edge-to-edge {
+    max-width: none !important;
+    margin: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  
+  /* Mobile reading padding for optimal text flow */
+  .mobile-reading-padding {
+    padding: 12px 8px !important;
+  }
+  
+  /* Full-width text optimization */
+  .mobile-reading-text {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+  
+  /* Page mode full-screen optimizations */
+  .mobile-full-screen-page {
+    padding: 0 !important;
+  }
+  
+  .mobile-page-wrapper {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  .mobile-edge-to-edge-page {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .mobile-page-article {
+    border-radius: 8px !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+  
+  .mobile-page-inner {
+    padding: 8px 0 8px 0 !important;
+  }
+  
+  .mobile-full-width-text {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  
+  /* Enhanced touch targets for mobile reading */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+  
+  /* Optimized typography for edge-to-edge reading */
+  .mobile-reading-text {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    -moz-hyphens: auto;
+  }
+  
+  /* Prevent text selection on UI elements during reading */
+  .mobile-page-content {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  
+  /* Allow text selection only on reading content */
+  .mobile-reading-text {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+  }
+  
+  /* Improved scrolling performance */
+  .mobile-text-container {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
+  }
+  
+  /* Full-screen immersive reading experience */
+  .mobile-immersive-reading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    background: inherit;
+  }
+  
+  /* Optimized line spacing for mobile reading */
+  .mobile-reading-text p {
+    margin-bottom: 0.75rem !important;
+    line-height: 1.6 !important;
+  }
+  
+  /* Enhanced readability for small screens */
+  .mobile-reading-text {
+    letter-spacing: 0.01em;
+    word-spacing: 0.05em;
+  }
+}
+
+/* Landscape orientation optimizations */
+@media screen and (max-width: 768px) and (orientation: landscape) {
+  .mobile-page-inner {
+    padding: 4px 0 4px 0 !important;
+  }
+  
+  .mobile-reading-padding {
+    padding: 8px 6px !important;
+  }
+  
+  .mobile-reading-text {
+    margin-bottom: 0.5rem !important;
+  }
+}
+
+/* Ultra-wide mobile screens (modern phones) */
+@media screen and (max-width: 768px) and (min-width: 390px) {
+  .mobile-reading-padding {
+    padding: 14px 10px !important;
+  }
+  
+  .mobile-full-width-text {
+    padding-left: 2px !important;
+    padding-right: 2px !important;
+  }
+}
+
+/* Compact mobile screens */
+@media screen and (max-width: 390px) {
+  .mobile-reading-padding {
+    padding: 10px 6px !important;
+  }
+  
+  .mobile-page-inner {
+    padding: 6px 0 6px 0 !important;
+  }
+  
+  .mobile-reading-text {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    margin-bottom: 0.6rem !important;
+  }
+}

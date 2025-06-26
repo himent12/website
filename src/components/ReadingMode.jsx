@@ -210,22 +210,22 @@ const ReadingMode = () => {
       .map(paragraph => paragraph.trim());
   }, [translatedText]);
 
-  // Pagination logic for page mode - optimized for mobile
+  // Pagination logic for page mode - optimized for mobile full-screen
   const paginateContent = useCallback(() => {
     if (!paragraphs.length || viewMode !== 'page') return;
     
-    // Mobile-optimized pagination calculation
-    const headerHeight = isMobile ? 70 : 80; // Header height
-    const paddingHeight = isMobile ? 40 : 80; // Reduced padding on mobile for more content space
+    // Mobile full-screen optimized pagination calculation
+    const headerHeight = isMobile ? 60 : 80; // Reduced header height for more content
+    const paddingHeight = isMobile ? 16 : 80; // Minimal padding on mobile for maximum content space
     const availableHeight = window.innerHeight - headerHeight - paddingHeight;
     
     const lineHeightPx = fontSize * lineHeight;
-    const paragraphMargin = isMobile ? 16 : 24; // Smaller margins on mobile
+    const paragraphMargin = isMobile ? 12 : 24; // Smaller margins on mobile for more content
     
-    // Mobile-optimized title height calculation
-    const titleFontSize = isMobile ? fontSize * 1.3 : fontSize * 1.5;
-    const metadataFontSize = isMobile ? fontSize * 0.75 : fontSize * 0.8;
-    const titleHeight = titleFontSize * 1.2 + 12 + metadataFontSize * 1.2 + (isMobile ? 20 : 32);
+    // Mobile full-screen optimized title height calculation
+    const titleFontSize = isMobile ? fontSize * 1.1 : fontSize * 1.5; // Smaller title on mobile
+    const metadataFontSize = isMobile ? fontSize * 0.7 : fontSize * 0.8;
+    const titleHeight = titleFontSize * 1.2 + 8 + metadataFontSize * 1.2 + (isMobile ? 12 : 32);
     
     const newPages = [];
     let currentPageContent = [];
@@ -240,10 +240,10 @@ const ReadingMode = () => {
     for (let i = 0; i < paragraphs.length; i++) {
       const paragraph = paragraphs[i];
       
-      // Mobile-optimized paragraph height estimation
+      // Mobile full-screen optimized paragraph height estimation
       const words = paragraph.split(' ').length;
-      const effectiveWidth = isMobile ? Math.min(maxWidth, window.innerWidth - 32) : maxWidth; // Account for mobile padding
-      const charWidth = isMobile ? fontSize * 0.55 : fontSize * 0.6; // Tighter character spacing on mobile
+      const effectiveWidth = isMobile ? window.innerWidth - 24 : maxWidth; // Full width minus minimal padding
+      const charWidth = isMobile ? fontSize * 0.5 : fontSize * 0.6; // Optimized character spacing for full-screen
       const charactersPerLine = Math.floor(effectiveWidth / charWidth);
       const wordsPerLine = Math.floor(charactersPerLine / 6); // Average word length ~5 chars + space
       const estimatedLines = Math.max(1, Math.ceil(words / wordsPerLine));
@@ -374,7 +374,7 @@ const ReadingMode = () => {
     }
   }, [viewMode, paragraphs.length, pages.length]);
 
-  // Enhanced touch gesture handling for page mode - optimized for mobile
+  // Enhanced touch gesture handling for page mode - optimized for mobile full-screen
   const handleTouchStart = useCallback((e) => {
     if (viewMode !== 'page') return;
     
@@ -403,14 +403,22 @@ const ReadingMode = () => {
     const deltaY = touchEndRef.current.y - touchStartRef.current.y;
     const deltaTime = touchEndRef.current.time - touchStartRef.current.time;
     
-    // Mobile-optimized swipe detection
-    const minSwipeDistance = isMobile ? 30 : 50; // Lower threshold for mobile
-    const maxSwipeTime = isMobile ? 400 : 300; // Longer time allowance for mobile
+    // Mobile full-screen optimized swipe detection
+    const minSwipeDistance = isMobile ? 25 : 50; // Even lower threshold for full-screen mobile
+    const maxSwipeTime = isMobile ? 500 : 300; // More generous time allowance for mobile
+    const minSwipeVelocity = isMobile ? 0.1 : 0.2; // Minimum swipe velocity (pixels/ms)
     
-    // Check if it's a horizontal swipe (not a tap or vertical scroll)
-    if (Math.abs(deltaX) > minSwipeDistance &&
-        Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && // More lenient horizontal detection
+    const swipeVelocity = Math.abs(deltaX) / deltaTime;
+    
+    // Enhanced swipe detection for full-screen mobile reading
+    if ((Math.abs(deltaX) > minSwipeDistance || swipeVelocity > minSwipeVelocity) &&
+        Math.abs(deltaX) > Math.abs(deltaY) * 1.2 && // More lenient horizontal detection for full-screen
         deltaTime < maxSwipeTime) {
+      
+      // Add haptic feedback for mobile (if supported)
+      if (isMobile && navigator.vibrate) {
+        navigator.vibrate(10); // Short vibration for page turn feedback
+      }
       
       if (deltaX > 0) {
         // Swipe right - previous page
@@ -707,20 +715,29 @@ const ReadingMode = () => {
                   />
                 </div>
 
-                {/* Max Width */}
+                {/* Max Width - Mobile Optimized */}
                 <div>
                   <label className={`block text-sm font-medium mb-3 ${currentTheme.text}`}>
-                    Content Width: {maxWidth}px
+                    Content Width: {isMobile ? 'Full Screen' : `${maxWidth}px`}
                   </label>
-                  <input
-                    type="range"
-                    min="600"
-                    max="900"
-                    step="50"
-                    value={maxWidth}
-                    onChange={(e) => setMaxWidth(Number(e.target.value))}
-                    className="w-full"
-                  />
+                  {!isMobile && (
+                    <input
+                      type="range"
+                      min="600"
+                      max="900"
+                      step="50"
+                      value={maxWidth}
+                      onChange={(e) => setMaxWidth(Number(e.target.value))}
+                      className="w-full"
+                    />
+                  )}
+                  {isMobile && (
+                    <div className={`p-3 rounded-lg border ${currentTheme.border} ${currentTheme.controlsBg}`}>
+                      <p className={`text-sm ${currentTheme.secondaryText}`}>
+                        Mobile uses full-screen width for optimal reading experience
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -800,15 +817,15 @@ const ReadingMode = () => {
 
       {/* Main Reading Content */}
       {viewMode === 'scroll' ? (
-        // Scroll Mode Content
-        <div className="pt-20 pb-16">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6">
-            {/* Document Header */}
-            <div className={`mb-8 p-6 rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border}`}>
-              <h1 className={`text-2xl sm:text-3xl font-bold mb-4 ${currentTheme.text}`}>
+        // Scroll Mode Content - Mobile Full-Screen Optimized
+        <div className={`pt-20 pb-16 ${isMobile ? 'mobile-full-screen-scroll' : ''}`}>
+          <div className={`${isMobile ? 'mobile-edge-to-edge' : 'max-w-4xl mx-auto px-4 sm:px-6'}`}>
+            {/* Document Header - Mobile Optimized */}
+            <div className={`${isMobile ? 'mb-4 p-3 mx-1' : 'mb-8 p-6'} rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border}`}>
+              <h1 className={`${isMobile ? 'text-xl' : 'text-2xl sm:text-3xl'} font-bold ${isMobile ? 'mb-2' : 'mb-4'} ${currentTheme.text}`}>
                 {originalTitle}
               </h1>
-              <div className={`flex flex-wrap items-center gap-4 text-sm ${currentTheme.secondaryText}`}>
+              <div className={`flex flex-wrap items-center gap-2 ${isMobile ? 'text-xs' : 'text-sm'} ${currentTheme.secondaryText}`}>
                 <span>Translated from Chinese</span>
                 <span>•</span>
                 <span>{paragraphs.length} paragraphs</span>
@@ -817,22 +834,28 @@ const ReadingMode = () => {
               </div>
             </div>
 
-            {/* Reading Content */}
+            {/* Reading Content - Mobile Full-Width */}
             <article
               ref={contentRef}
-              className={`${currentTheme.contentBg} ${currentTheme.shadow} rounded-2xl border ${currentTheme.border} overflow-hidden`}
-              style={{ maxWidth: `${maxWidth}px`, margin: '0 auto' }}
+              className={`${currentTheme.contentBg} ${currentTheme.shadow} ${isMobile ? 'rounded-lg mx-1' : 'rounded-2xl'} border ${currentTheme.border} overflow-hidden`}
+              style={{
+                maxWidth: isMobile ? 'none' : `${maxWidth}px`,
+                margin: isMobile ? '0' : '0 auto',
+                width: isMobile ? 'calc(100% - 8px)' : 'auto'
+              }}
             >
-              <div className="p-8 sm:p-12">
+              <div className={`${isMobile ? 'p-3 mobile-reading-padding' : 'p-8 sm:p-12'}`}>
                 {paragraphs.map((paragraph, index) => (
                   <p
                     key={index}
-                    className={`mb-8 ${currentTheme.text} ${fontOptions.find(f => f.value === fontFamily)?.class || 'font-lora'}`}
+                    className={`${isMobile ? 'mb-4' : 'mb-8'} ${currentTheme.text} ${fontOptions.find(f => f.value === fontFamily)?.class || 'font-lora'} mobile-reading-text`}
                     style={{
-                      fontSize: `${fontSize}px`,
-                      lineHeight: lineHeight,
-                      textAlign: 'justify',
-                      textJustify: 'inter-word'
+                      fontSize: `${isMobile ? Math.max(fontSize - 1, 14) : fontSize}px`,
+                      lineHeight: isMobile ? Math.max(lineHeight - 0.1, 1.5) : lineHeight,
+                      textAlign: isMobile ? 'left' : 'justify',
+                      textJustify: isMobile ? 'auto' : 'inter-word',
+                      wordBreak: isMobile ? 'break-word' : 'normal',
+                      hyphens: isMobile ? 'auto' : 'none'
                     }}
                     dangerouslySetInnerHTML={{
                       __html: formatText(paragraph)
@@ -842,21 +865,21 @@ const ReadingMode = () => {
               </div>
             </article>
 
-            {/* End of Document */}
-            <div className={`mt-12 text-center p-8 rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border}`}>
-              <div className={`text-lg font-medium mb-4 ${currentTheme.text}`}>
+            {/* End of Document - Mobile Optimized */}
+            <div className={`${isMobile ? 'mt-6 text-center p-4 mx-1' : 'mt-12 text-center p-8'} rounded-2xl ${currentTheme.contentBg} ${currentTheme.shadow} border ${currentTheme.border}`}>
+              <div className={`${isMobile ? 'text-base' : 'text-lg'} font-medium ${isMobile ? 'mb-2' : 'mb-4'} ${currentTheme.text}`}>
                 End of Document
               </div>
-              <p className={`mb-6 ${currentTheme.secondaryText}`}>
+              <p className={`${isMobile ? 'mb-4 text-sm' : 'mb-6'} ${currentTheme.secondaryText}`}>
                 Thank you for reading! Would you like to translate another document?
               </p>
               <button
                 onClick={() => navigate('/')}
-                className={`px-8 py-3 rounded-full font-medium transition-all transform hover:scale-105 ${
+                className={`${isMobile ? 'px-6 py-2 text-sm' : 'px-8 py-3'} rounded-full font-medium transition-all transform hover:scale-105 ${
                   readingMode === 'night'
                     ? 'bg-blue-600 hover:bg-blue-700 text-white'
                     : 'bg-amber-600 hover:bg-amber-700 text-white'
-                } shadow-lg`}
+                } shadow-lg touch-target`}
               >
                 Translate Another Document
               </button>
@@ -864,21 +887,23 @@ const ReadingMode = () => {
           </div>
         </div>
       ) : (
-        // Page Mode Content - Mobile Optimized
+        // Page Mode Content - Mobile Full-Screen Optimized
         <div
-          className={`fixed inset-0 overflow-hidden ${isMobile ? 'mobile-content-container' : ''}`}
+          className={`fixed inset-0 overflow-hidden ${isMobile ? 'mobile-content-container mobile-full-screen-page' : ''}`}
           style={{
-            paddingTop: isMobile ? '70px' : '80px',
-            paddingBottom: isMobile ? '20px' : '64px'
+            paddingTop: isMobile ? '60px' : '80px',
+            paddingBottom: isMobile ? '8px' : '64px',
+            paddingLeft: isMobile ? '4px' : '16px',
+            paddingRight: isMobile ? '4px' : '16px'
           }}
           ref={pageContainerRef}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          <div className={`h-full flex items-stretch justify-center ${isMobile ? 'px-2' : 'px-4 sm:px-6'}`}>
+          <div className={`h-full flex items-stretch justify-center ${isMobile ? 'mobile-page-wrapper' : 'px-4 sm:px-6'}`}>
             <div className="relative w-full h-full" style={{ maxWidth: isMobile ? '100%' : '1024px' }}>
-              {/* Page Content Container */}
-              <div className={`relative h-full overflow-hidden ${isMobile ? 'mobile-page-content' : ''}`}>
+              {/* Page Content Container - Full Screen Mobile */}
+              <div className={`relative h-full overflow-hidden ${isMobile ? 'mobile-page-content mobile-edge-to-edge-page' : ''}`}>
                 {pages.length > 0 && currentPage >= 1 && currentPage <= pages.length && pages[currentPage - 1] && (
                   <div
                     className={`absolute inset-0 transition-all duration-300 ease-in-out ${
@@ -886,21 +911,22 @@ const ReadingMode = () => {
                     }`}
                   >
                     <article
-                      className={`h-full ${currentTheme.contentBg} ${currentTheme.shadow} ${isMobile ? 'rounded-lg mobile-page-content' : 'rounded-2xl'} border ${currentTheme.border} overflow-hidden`}
+                      className={`h-full ${currentTheme.contentBg} ${currentTheme.shadow} ${isMobile ? 'mobile-page-article' : 'rounded-2xl'} border ${currentTheme.border} overflow-hidden`}
                       style={{
-                        maxWidth: isMobile ? '100%' : `${maxWidth}px`,
-                        margin: '0 auto',
-                        height: '100%'
+                        maxWidth: '100%',
+                        margin: '0',
+                        height: '100%',
+                        borderRadius: isMobile ? '8px' : '16px'
                       }}
                     >
-                      <div className={`h-full flex flex-col ${isMobile ? 'p-4 pb-6' : 'p-8 sm:p-12'}`}>
-                        {/* Page Header - Mobile Optimized */}
+                      <div className={`h-full flex flex-col ${isMobile ? 'mobile-page-inner' : 'p-8 sm:p-12'}`}>
+                        {/* Page Header - Mobile Full-Screen Optimized */}
                         {pages[currentPage - 1]?.includeTitle && (
-                          <div className={`${isMobile ? 'mb-4' : 'mb-8'} flex-shrink-0`}>
-                            <h1 className={`${isMobile ? 'text-xl' : 'text-2xl sm:text-3xl'} font-bold ${isMobile ? 'mb-2' : 'mb-4'} ${currentTheme.text}`}>
+                          <div className={`${isMobile ? 'mb-3 px-3 pt-3' : 'mb-8'} flex-shrink-0`}>
+                            <h1 className={`${isMobile ? 'text-lg' : 'text-2xl sm:text-3xl'} font-bold ${isMobile ? 'mb-1' : 'mb-4'} ${currentTheme.text}`}>
                               {originalTitle}
                             </h1>
-                            <div className={`flex flex-wrap items-center gap-2 ${isMobile ? 'text-xs' : 'text-sm'} ${currentTheme.secondaryText} ${isMobile ? 'mb-4' : 'mb-8'}`}>
+                            <div className={`flex flex-wrap items-center gap-1 ${isMobile ? 'text-xs' : 'text-sm'} ${currentTheme.secondaryText} ${isMobile ? 'mb-2' : 'mb-8'}`}>
                               <span>Translated from Chinese</span>
                               <span>•</span>
                               <span>{paragraphs.length} paragraphs</span>
@@ -910,19 +936,22 @@ const ReadingMode = () => {
                           </div>
                         )}
                         
-                        {/* Page Content - Mobile Optimized */}
-                        <div className={`flex-1 overflow-y-auto ${isMobile ? 'mobile-text-container' : ''} scrollbar-hide`} style={{ minHeight: 0 }}>
-                          <div className={`${isMobile ? 'pb-4' : 'pb-8'}`}>
+                        {/* Page Content - Mobile Full-Screen Reading */}
+                        <div className={`flex-1 overflow-y-auto ${isMobile ? 'mobile-text-container mobile-full-width-text px-3' : ''} scrollbar-hide`} style={{ minHeight: 0 }}>
+                          <div className={`${isMobile ? 'pb-2' : 'pb-8'}`}>
                             {pages[currentPage - 1]?.content.map((paragraph, index) => (
                               <p
                                 key={`${currentPage}-${index}`}
-                                className={`${isMobile ? 'mb-4' : 'mb-6'} ${currentTheme.text} ${fontOptions.find(f => f.value === fontFamily)?.class || 'font-lora'}`}
+                                className={`${isMobile ? 'mb-3' : 'mb-6'} ${currentTheme.text} ${fontOptions.find(f => f.value === fontFamily)?.class || 'font-lora'} mobile-reading-text`}
                                 style={{
-                                  fontSize: `${isMobile ? Math.max(fontSize - 2, 14) : fontSize}px`,
-                                  lineHeight: isMobile ? Math.max(lineHeight - 0.1, 1.4) : lineHeight,
+                                  fontSize: `${isMobile ? Math.max(fontSize - 1, 14) : fontSize}px`,
+                                  lineHeight: isMobile ? Math.max(lineHeight - 0.05, 1.5) : lineHeight,
                                   textAlign: isMobile ? 'left' : 'justify',
                                   textJustify: isMobile ? 'auto' : 'inter-word',
-                                  wordBreak: isMobile ? 'break-word' : 'normal'
+                                  wordBreak: isMobile ? 'break-word' : 'normal',
+                                  hyphens: isMobile ? 'auto' : 'none',
+                                  marginLeft: 0,
+                                  marginRight: 0
                                 }}
                                 dangerouslySetInnerHTML={{
                                   __html: formatText(paragraph)
@@ -932,22 +961,22 @@ const ReadingMode = () => {
                           </div>
                         </div>
                         
-                        {/* End of Document on Last Page */}
+                        {/* End of Document on Last Page - Mobile Optimized */}
                         {currentPage === totalPages && (
-                          <div className={`${isMobile ? 'mt-4' : 'mt-8'} text-center flex-shrink-0`}>
-                            <div className={`${isMobile ? 'text-base' : 'text-lg'} font-medium ${isMobile ? 'mb-2' : 'mb-4'} ${currentTheme.text}`}>
+                          <div className={`${isMobile ? 'mt-3 px-3 pb-3' : 'mt-8'} text-center flex-shrink-0`}>
+                            <div className={`${isMobile ? 'text-sm' : 'text-lg'} font-medium ${isMobile ? 'mb-1' : 'mb-4'} ${currentTheme.text}`}>
                               End of Document
                             </div>
-                            <p className={`${isMobile ? 'mb-4 text-sm' : 'mb-6'} ${currentTheme.secondaryText}`}>
+                            <p className={`${isMobile ? 'mb-3 text-xs' : 'mb-6'} ${currentTheme.secondaryText}`}>
                               Thank you for reading! Would you like to translate another document?
                             </p>
                             <button
                               onClick={() => navigate('/')}
-                              className={`${isMobile ? 'px-6 py-2 text-sm' : 'px-8 py-3'} rounded-full font-medium transition-all transform hover:scale-105 ${
+                              className={`${isMobile ? 'px-4 py-2 text-xs' : 'px-8 py-3'} rounded-full font-medium transition-all transform hover:scale-105 ${
                                 readingMode === 'night'
                                   ? 'bg-blue-600 hover:bg-blue-700 text-white'
                                   : 'bg-amber-600 hover:bg-amber-700 text-white'
-                              } shadow-lg`}
+                              } shadow-lg touch-target`}
                             >
                               Translate Another Document
                             </button>
