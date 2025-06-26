@@ -1,15 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useMobile } from '../contexts/MobileContext';
-import { GestureHandler, TouchUtils, PerformanceUtils } from '../utils/mobileUtils';
+import { TouchUtils, PerformanceUtils } from '../utils/mobileUtils';
 
 const MobileReadingMode = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const contentRef = useRef(null);
-  const pageContainerRef = useRef(null);
-  const gestureHandlerRef = useRef(null);
-  const mobile = useMobile();
   
   // Reading settings state
   const [readingMode, setReadingMode] = useState('day');
@@ -32,7 +28,6 @@ const MobileReadingMode = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [pages, setPages] = useState([]);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   
   // Get translated text from navigation state
   const translatedText = location.state?.translatedText || '';
@@ -123,52 +118,84 @@ const MobileReadingMode = () => {
   }, [viewMode]);
 
 
-  // Page mode pagination logic - fixed to prevent text skipping
+  // COMPLETELY NEW BULLETPROOF PAGINATION SYSTEM - NEVER SKIPS WORDS
+  const createPerfectPagination = useCallback((text) => {
+    console.log('🔥 STARTING BULLETPROOF PAGINATION');
+    console.log('📝 Input text length:', text.length);
+    
+    const pages = [];
+    const words = text.split(/\s+/).filter(word => word.length > 0);
+    console.log('📊 Total words to paginate:', words.length);
+    
+    // First page: Title page
+    pages.push('TITLE_PAGE');
+    
+    // Target words per page for mobile (adjust based on screen size and font)
+    const wordsPerPage = 200; // Conservative estimate for mobile
+    
+    let currentPageWords = [];
+    let wordIndex = 0;
+    
+    while (wordIndex < words.length) {
+      const word = words[wordIndex];
+      
+      // Add word to current page
+      currentPageWords.push(word);
+      wordIndex++;
+      
+      // Check if we should create a new page
+      if (currentPageWords.length >= wordsPerPage || wordIndex >= words.length) {
+        // Create page content by joining words with spaces
+        const pageContent = currentPageWords.join(' ');
+        
+        if (pageContent.trim().length > 0) {
+          pages.push(pageContent);
+          console.log(`📄 Page ${pages.length - 1} created with ${currentPageWords.length} words`);
+          console.log(`🔤 First 50 chars: "${pageContent.substring(0, 50)}..."`);
+        }
+        
+        // Reset for next page
+        currentPageWords = [];
+      }
+    }
+    
+    console.log('✅ PAGINATION COMPLETE');
+    console.log('📚 Total pages created:', pages.length);
+    console.log('🔍 Verifying no words were skipped...');
+    
+    // VERIFICATION: Check that all words are included
+    const allPagesText = pages.slice(1).join(' '); // Skip title page
+    const originalWords = words.join(' ');
+    
+    if (allPagesText === originalWords) {
+      console.log('✅ VERIFICATION PASSED: All words preserved!');
+    } else {
+      console.error('❌ VERIFICATION FAILED: Words were skipped!');
+      console.log('Original length:', originalWords.length);
+      console.log('Pages length:', allPagesText.length);
+    }
+    
+    return pages;
+  }, []);
+
+  // Page mode pagination logic - COMPLETELY REWRITTEN
   useEffect(() => {
     if (viewMode !== 'page') return;
     
-    const pagesArray = [];
-    
-    // First page: Title and document info only
-    pagesArray.push('TITLE_PAGE');
+    console.log('🚀 INITIALIZING NEW PAGINATION SYSTEM');
     
     // Combine all text content
     const fullText = paragraphs.join('\n\n');
-    const charactersPerPage = 1200; // Adjust based on mobile screen size
     
-    // Fixed pagination algorithm to prevent text skipping
-    let currentIndex = 0;
-    
-    while (currentIndex < fullText.length) {
-      let endIndex = Math.min(currentIndex + charactersPerPage, fullText.length);
-      
-      // Only adjust for word boundaries if we're not at the end
-      if (endIndex < fullText.length) {
-        // Look for the last space within the last 100 characters to avoid cutting words
-        const searchStart = Math.max(endIndex - 100, currentIndex);
-        const lastSpace = fullText.lastIndexOf(' ', endIndex);
-        
-        if (lastSpace > searchStart) {
-          endIndex = lastSpace;
-        }
-      }
-      
-      const pageContent = fullText.substring(currentIndex, endIndex).trim();
-      
-      if (pageContent.length > 0) {
-        pagesArray.push(pageContent);
-      }
-      
-      // CRITICAL FIX: Use the actual endIndex instead of fixed increment
-      // This prevents text skipping when word boundaries are adjusted
-      currentIndex = endIndex;
-      
-      // Safety check to prevent infinite loops
-      if (currentIndex === endIndex && endIndex < fullText.length) {
-        // If no progress is made, move forward by at least one character
-        currentIndex++;
-      }
+    if (!fullText || fullText.trim().length === 0) {
+      console.log('⚠️ No text to paginate');
+      setPages(['TITLE_PAGE']);
+      setTotalPages(1);
+      return;
     }
+    
+    // Use the new bulletproof pagination system
+    const pagesArray = createPerfectPagination(fullText);
     
     setPages(pagesArray);
     setTotalPages(pagesArray.length);
@@ -176,7 +203,13 @@ const MobileReadingMode = () => {
     // Update progress based on current page
     const pageProgress = pagesArray.length > 0 ? ((currentPage - 1) / (pagesArray.length - 1)) * 100 : 0;
     setReadingProgress(pageProgress);
-  }, [viewMode, paragraphs, currentPage]);
+    
+    console.log('📊 Pagination complete:', {
+      totalPages: pagesArray.length,
+      currentPage,
+      progress: pageProgress
+    });
+  }, [viewMode, paragraphs, currentPage, createPerfectPagination]);
 
   // Touch gesture handling for page mode with scroll prevention
   useEffect(() => {
