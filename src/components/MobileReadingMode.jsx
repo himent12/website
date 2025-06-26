@@ -115,51 +115,13 @@ const MobileReadingMode = () => {
       setReadingProgress(scrollPercent);
       setLastActivityTime(Date.now());
       
-      // Auto-hide controls when scrolling
-      setShowControls(false);
-      setShowSettings(false);
-      setShowBookmarks(false);
+      // Don't auto-hide controls when scrolling - let user control them
     }, 16);
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [viewMode]);
 
-  // Touch handling for scroll mode
-  useEffect(() => {
-    if (viewMode !== 'scroll') return;
-    
-    let touchStartTime = 0;
-    let hasMoved = false;
-    
-    const handleTouchStart = (e) => {
-      touchStartTime = Date.now();
-      hasMoved = false;
-    };
-    
-    const handleTouchMove = () => {
-      hasMoved = true;
-    };
-    
-    const handleTouchEnd = (e) => {
-      const touchDuration = Date.now() - touchStartTime;
-      
-      // Only handle tap if it was quick and didn't move (not a scroll)
-      if (!hasMoved && touchDuration < 300) {
-        handleScreenTap(e);
-      }
-    };
-    
-    document.addEventListener('touchstart', handleTouchStart, { passive: true });
-    document.addEventListener('touchmove', handleTouchMove, { passive: true });
-    document.addEventListener('touchend', handleTouchEnd, { passive: true });
-    
-    return () => {
-      document.removeEventListener('touchstart', handleTouchStart);
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [viewMode]);
 
   // Page mode pagination logic - character-based to prevent text skipping
   useEffect(() => {
@@ -209,32 +171,19 @@ const MobileReadingMode = () => {
     
     let touchStartX = 0;
     let touchEndX = 0;
-    let touchStartTime = 0;
-    let hasMoved = false;
     
     const handleTouchStart = (e) => {
       touchStartX = e.changedTouches[0].screenX;
-      touchStartTime = Date.now();
-      hasMoved = false;
     };
     
     const handleTouchMove = (e) => {
       // Prevent scrolling in page mode
       e.preventDefault();
-      hasMoved = true;
     };
     
     const handleTouchEnd = (e) => {
       touchEndX = e.changedTouches[0].screenX;
-      const touchDuration = Date.now() - touchStartTime;
-      
-      // Only handle swipe if there was significant movement
-      if (hasMoved) {
-        handleSwipe();
-      } else if (touchDuration < 300) {
-        // Handle tap only if it was quick and didn't move
-        handleScreenTap(e);
-      }
+      handleSwipe();
     };
     
     const handleSwipe = () => {
@@ -294,27 +243,18 @@ const MobileReadingMode = () => {
     return () => clearTimeout(timer);
   }, [lastActivityTime]);
 
-  // Show/hide controls only on center screen tap (not swipes)
-  const handleScreenTap = (e) => {
-    // Only handle taps in the center area of the screen
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-    const centerX = screenWidth / 2;
-    const centerY = screenHeight / 2;
-    const tapRadius = Math.min(screenWidth, screenHeight) * 0.3; // 30% of smaller dimension
-    
-    const tapX = e.clientX || (e.touches && e.touches[0]?.clientX) || 0;
-    const tapY = e.clientY || (e.touches && e.touches[0]?.clientY) || 0;
-    
-    const distance = Math.sqrt(Math.pow(tapX - centerX, 2) + Math.pow(tapY - centerY, 2));
-    
-    // Only toggle controls if tap is in center area
-    if (distance <= tapRadius) {
-      setShowControls(prev => !prev);
-      setShowSettings(false);
-      setShowBookmarks(false);
-      setLastActivityTime(Date.now());
+  // Simple click handler for controls
+  const handleScreenClick = (e) => {
+    // Don't interfere with button clicks
+    if (e.target.closest('button') || e.target.closest('[role="button"]')) {
+      return;
     }
+    
+    // Toggle controls on any click in the content area
+    setShowControls(prev => !prev);
+    setShowSettings(false);
+    setShowBookmarks(false);
+    setLastActivityTime(Date.now());
   };
 
   // Theme configurations optimized for mobile
@@ -443,7 +383,7 @@ const MobileReadingMode = () => {
       </div>
 
       {/* Main Reading Content - Dual Mode Support */}
-      <div className={viewMode === 'page' ? "pt-0 pb-0 px-0" : "pt-20 pb-16 px-4"}>
+      <div className={viewMode === 'page' ? "pt-0 pb-0 px-0" : "pt-20 pb-16 px-4"} onClick={handleScreenClick}>
         <div className={viewMode === 'page' ? "max-w-none mx-0 h-screen flex flex-col" : "max-w-none mx-0"}>
           {/* Document Header - Only show in scroll mode */}
           {viewMode === 'scroll' && (
