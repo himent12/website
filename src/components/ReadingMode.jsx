@@ -38,14 +38,13 @@ const ReadingMode = () => {
   
   // Navigation and progress state
   const [readingProgress, setReadingProgress] = useState(0);
-  const [currentChapter, setCurrentChapter] = useState(1);
-  const [totalChapters] = useState(1); // For future multi-chapter support
+  // Removed unused currentChapter and setCurrentChapter
+  // Removed unused totalChapters
   const [bookmarks, setBookmarks] = useState([]);
   const [showBookmarks, setShowBookmarks] = useState(false);
   
   // Animation and interaction state
-  const [isScrolling, setIsScrolling] = useState(false);
-  const [lastScrollTime, setLastScrollTime] = useState(0);
+  // Removed unused isScrolling, setIsScrolling, lastScrollTime, setLastScrollTime
   const [showControls, setShowControls] = useState(false); // Changed to false by default
   const [lastActivityTime, setLastActivityTime] = useState(Date.now());
   
@@ -55,8 +54,7 @@ const ReadingMode = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [pages, setPages] = useState([]);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [scrollPosition, setScrollPosition] = useState(0);
-  const [pagePosition, setPagePosition] = useState(0);
+  // Removed unused scrollPosition and pagePosition
   
   // Get the translated text from navigation state
   const translatedText = location.state?.translatedText || '';
@@ -119,8 +117,6 @@ const ReadingMode = () => {
           const scrollPercent = Math.min((scrollTop / docHeight) * 100, 100);
           
           setReadingProgress(scrollPercent);
-          setIsScrolling(true);
-          setLastScrollTime(Date.now());
           setLastActivityTime(Date.now()); // Update activity time on scroll
           
           // Hide controls when scrolling
@@ -285,9 +281,12 @@ const ReadingMode = () => {
     setTotalPages(newPages.length);
     
     // Set current page to 1 if not set or invalid
-    if (!currentPage || currentPage < 1 || currentPage > newPages.length) {
-      setCurrentPage(1);
-    }
+    setCurrentPage(prev => {
+      if (!prev || prev < 1 || prev > newPages.length) {
+        return 1;
+      }
+      return prev;
+    });
   }, [paragraphs, fontSize, lineHeight, maxWidth, viewMode, isMobile]);
 
   // Update pagination when relevant settings change
@@ -301,14 +300,16 @@ const ReadingMode = () => {
   const goToNextPage = useCallback(() => {
     if (currentPage < totalPages && !isTransitioning) {
       setIsTransitioning(true);
-      setCurrentPage(prev => prev + 1);
+      setCurrentPage(prev => {
+        const newPage = prev + 1;
+        // Update reading progress using newPage to avoid stale closure
+        const progress = (newPage / totalPages) * 100;
+        setReadingProgress(progress);
+        return newPage;
+      });
       setTimeout(() => setIsTransitioning(false), 300);
-      
-      // Update reading progress
-      const progress = (currentPage / totalPages) * 100;
-      setReadingProgress(progress);
     }
-  }, [currentPage, totalPages, isTransitioning]);
+  }, [totalPages, isTransitioning, currentPage]);
 
   const goToPreviousPage = useCallback(() => {
     if (currentPage > 1 && !isTransitioning) {
@@ -337,9 +338,6 @@ const ReadingMode = () => {
   // Mode switching functions
   const switchToScrollMode = useCallback(() => {
     if (viewMode === 'page') {
-      // Save current page position
-      setPagePosition(currentPage);
-      
       // Calculate scroll position based on current page
       const scrollPercent = ((currentPage - 1) / totalPages) * 100;
       setViewMode('scroll');
@@ -354,9 +352,8 @@ const ReadingMode = () => {
 
   const switchToPageMode = useCallback(() => {
     if (viewMode === 'scroll') {
-      // Save current scroll position
+      // Save current scroll position as a percentage
       const currentScrollPercent = (window.pageYOffset / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
-      setScrollPosition(window.pageYOffset);
       
       setViewMode('page');
       
@@ -567,32 +564,7 @@ const ReadingMode = () => {
             </svg>
           </button>
 
-          {/* Chapter Navigation */}
-          <div className="flex items-center space-x-1">
-            <button
-              disabled={currentChapter <= 1}
-              className={`p-2 rounded-full transition-colors ${currentChapter <= 1 ? 'opacity-50 cursor-not-allowed' : currentTheme.buttonHover}`}
-              title="Previous Chapter"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-              </svg>
-            </button>
-            
-            <span className={`px-3 py-1 text-sm font-medium ${currentTheme.secondaryText}`}>
-              {currentChapter} / {totalChapters}
-            </span>
-            
-            <button
-              disabled={currentChapter >= totalChapters}
-              className={`p-2 rounded-full transition-colors ${currentChapter >= totalChapters ? 'opacity-50 cursor-not-allowed' : currentTheme.buttonHover}`}
-              title="Next Chapter"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
+          {/* Removed unused chapter navigation */}
 
           {/* View Mode Toggle */}
           <div className="flex items-center space-x-1">
